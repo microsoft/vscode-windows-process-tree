@@ -29,7 +29,6 @@ DWORD GetParentPID(DWORD pid) {
 void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   DWORD process_ids[1024];
   DWORD process_ids_size;
-  v8::Local<v8::Object> process_objects[1024];
   ProcessInfo process_info[1024];
 
   if (!EnumProcesses(process_ids, sizeof(process_ids), &process_ids_size)) {
