@@ -1,10 +1,11 @@
 #include <unordered_map>
 #include <nan.h>
 #include <psapi.h>
+#include <string.h>
 #include <tlhelp32.h>
 
 struct ProcessInfo {
-  TCHAR* name;
+  TCHAR name[MAX_PATH];
   DWORD pid;
 };
 
@@ -42,8 +43,6 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   unsigned int process_count = 0;
   for (unsigned int i = 0; i < process_ids_count; i++) {
     if (process_ids[i] != 0) {
-      TCHAR process_name[MAX_PATH] = TEXT("<unknown>");
-      
       // Get a handle to the process.
       HANDLE process_handle = OpenProcess(
           PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, process_ids[i]);
@@ -55,13 +54,14 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
         // Get the process name and store it and the pid for later
         if (EnumProcessModules(process_handle, &modules, sizeof(modules),
                                &modules_size)) {
+          TCHAR process_name[MAX_PATH] = TEXT("<unknown>");
           GetModuleBaseName(process_handle, modules, process_name, 
                             sizeof(process_name) / sizeof(TCHAR));
-
+                                  
           // TODO: Use a parallel array to store name?
           process_info[process_count] = ProcessInfo();
           process_info[process_count].pid = process_ids[i];
-          process_info[process_count].name = process_name;
+          strcpy(process_info[process_count].name, process_name);
           process_count++;
         }
       }
@@ -71,16 +71,16 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     }
   }
 
-  // Fetch the parent IDs and assign, because CreateToolhelp32Snapshot is a
-  // costly operation we only want to do it once.
-  std::unordered_map<DWORD, DWORD> unordered_map;
+  // Fetch the parent IDs and store in a map for fast lookup, because
+  // CreateToolhelp32Snapshot is a costly operation we only want to do it once.
+  std::unordered_map<DWORD, DWORD> pid_to_ppid_map;
   PROCESSENTRY32 process_entry = { 0 };
   DWORD parent_pid = 0;
   HANDLE snapshot_handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   process_entry.dwSize = sizeof(PROCESSENTRY32);
   if (Process32First(snapshot_handle, &process_entry)) {
     do {
-      unordered_map[process_entry.th32ProcessID] =
+      pid_to_ppid_map[process_entry.th32ProcessID] =
           process_entry.th32ParentProcessID;
     } while (Process32Next(snapshot_handle, &process_entry));
   }
@@ -95,7 +95,7 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     Nan::Set(object, Nan::New<v8::String>("pid").ToLocalChecked(),
              Nan::New<v8::Number>(process_info[i].pid));
     Nan::Set(object, Nan::New<v8::String>("ppid").ToLocalChecked(),
-        Nan::New<v8::Number>(unordered_map[process_info[i].pid]));
+        Nan::New<v8::Number>(pid_to_ppid_map[process_info[i].pid]));
              
     Nan::Set(result, i, Nan::New<v8::Value>(object));
   }
