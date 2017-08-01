@@ -1,10 +1,8 @@
 #include <nan.h>
-#include <windows.h>
-#include <stdio.h>
+#include <psapi.h>
 #include <tlhelp32.h>
-#include <psapi.h> // EnumProcesses
 
-DWORD getParentPID(DWORD pid) {
+DWORD GetParentPID(DWORD pid) {
   HANDLE h = NULL;
   PROCESSENTRY32 pe = { 0 };
   DWORD ppid = 0;
@@ -59,14 +57,13 @@ void Method(const Nan::FunctionCallbackInfo<v8::Value>& info) {
           // Get the process information
           v8::Local<v8::String> processName = Nan::New<v8::String>(szProcessName).ToLocalChecked();
           v8::Local<v8::Number> processId = Nan::New<v8::Number>(aProcesses[i]);
-          v8::Local<v8::Number> parentProcessId = Nan::New<v8::Number>(getParentPID(aProcesses[i]));
+          v8::Local<v8::Number> parentProcessId = Nan::New<v8::Number>(GetParentPID(aProcesses[i]));
 
           // Construct the return object
           v8::Local<v8::Object> object = Nan::New<v8::Object>();
           Nan::Set(object, Nan::New<v8::String>("name").ToLocalChecked(), processName);
           Nan::Set(object, Nan::New<v8::String>("pid").ToLocalChecked(), processId);
           Nan::Set(object, Nan::New<v8::String>("ppid").ToLocalChecked(), parentProcessId);
-
 
           // Set the return object on the array
           Nan::Set(a, arrayIndex++, Nan::New<v8::Value>(object));
@@ -79,8 +76,6 @@ void Method(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   }
   
   info.GetReturnValue().Set(a);
-
-  // info.GetReturnValue().Set(Nan::New("world").ToLocalChecked());
 }
 
 void Init(v8::Local<v8::Object> exports) {
