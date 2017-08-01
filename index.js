@@ -19,7 +19,7 @@ function buildProcessTree(processList, rootPid) {
 }
 
 function getProcessTree(rootPid) {
-  var processList = native.hello();
+  var processList = native.getProcessList();
   // TODO: Move filter to native
   processList = processList.filter(a => !!a);
   return buildProcessTree(processList, rootPid);

@@ -3,67 +3,63 @@
 #include <tlhelp32.h>
 
 DWORD GetParentPID(DWORD pid) {
-  HANDLE h = NULL;
-  PROCESSENTRY32 pe = { 0 };
-  DWORD ppid = 0;
-  pe.dwSize = sizeof(PROCESSENTRY32);
-  h = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-  if (Process32First(h, &pe)) {
+  PROCESSENTRY32 process_entry = { 0 };
+  DWORD parent_pid = 0;
+  HANDLE handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+  process_entry.dwSize = sizeof(PROCESSENTRY32);
+  if (Process32First(handle, &process_entry)) {
     do {
-      if (pe.th32ProcessID == pid) {
-        ppid = pe.th32ParentProcessID;
+      if (process_entry.th32ProcessID == pid) {
+        parent_pid = process_entry.th32ParentProcessID;
         break;
       }
-    } while (Process32Next(h, &pe));
+    } while (Process32Next(handle, &process_entry));
   }
-  CloseHandle(h);
-  return (ppid);
+  CloseHandle(handle);
+  return parent_pid;
 }
 
-void Method(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  DWORD aProcesses[1024];
-  DWORD cbNeeded;
-  DWORD cProcesses;
-  unsigned int i;
+void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  DWORD process_ids[1024];
+  DWORD process_ids_size;
 
-  if (!EnumProcesses(aProcesses, sizeof(aProcesses), &cbNeeded)) {
+  if (!EnumProcesses(process_ids, sizeof(process_ids), &process_ids_size)) {
     info.GetReturnValue().SetUndefined();
     return;
   }
 
-  v8::Local<v8::Array> a = Nan::New<v8::Array>(cProcesses);
+  DWORD process_ids_count = process_ids_size / sizeof(DWORD);
 
-  cProcesses = cbNeeded / sizeof(DWORD);
+  v8::Local<v8::Array> a = Nan::New<v8::Array>(process_ids_count);
 
   unsigned int arrayIndex = 0;
 
-  for (i = 0; i < cProcesses; i++) {
-    if (aProcesses[i] != 0) {
-      TCHAR szProcessName[MAX_PATH] = TEXT("<unknown>");
+  for (unsigned int i = 0; i < process_ids_count; i++) {
+    if (process_ids[i] != 0) {
+      TCHAR process_name[MAX_PATH] = TEXT("<unknown>");
       
       // Get a handle to the process.
-      HANDLE hProcess = OpenProcess(
-          PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, aProcesses[i]);
+      HANDLE process_handle = OpenProcess(
+          PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, process_ids[i]);
   
       // Get the process name.
-      if (hProcess != NULL) {
-        HMODULE hMod;
-        DWORD cbNeeded;
+      if (process_handle != NULL) {
+        HMODULE modules;
+        DWORD modules_size;
 
-        if (EnumProcessModules(hProcess, &hMod, sizeof(hMod), &cbNeeded)) {
-          GetModuleBaseName(hProcess, hMod, szProcessName, 
-                            sizeof(szProcessName)/sizeof(TCHAR));
-          
-          // Get the process information
-          v8::Local<v8::String> processName = Nan::New<v8::String>(szProcessName).ToLocalChecked();
-          v8::Local<v8::Number> processId = Nan::New<v8::Number>(aProcesses[i]);
-          v8::Local<v8::Number> parentProcessId = Nan::New<v8::Number>(GetParentPID(aProcesses[i]));
+        if (EnumProcessModules(process_handle, &modules, sizeof(modules),
+                               &modules_size)) {
+          GetModuleBaseName(process_handle, modules, process_name, 
+                            sizeof(process_name) / sizeof(TCHAR));
 
           // Construct the return object
           v8::Local<v8::Object> object = Nan::New<v8::Object>();
-          Nan::Set(object, Nan::New<v8::String>("name").ToLocalChecked(), processName);
-          Nan::Set(object, Nan::New<v8::String>("pid").ToLocalChecked(), processId);
-          Nan::Set(object, Nan::New<v8::String>("ppid").ToLocalChecked(), parentProcessId);
+          Nan::Set(object, Nan::New<v8::String>("name").ToLocalChecked(),
+                   Nan::New<v8::String>(process_name).ToLocalChecked());
+          Nan::Set(object, Nan::New<v8::String>("pid").ToLocalChecked(),
+                   Nan::New<v8::Number>(process_ids[i]));
+          Nan::Set(object, Nan::New<v8::String>("ppid").ToLocalChecked(),
+                   Nan::New<v8::Number>(GetParentPID(process_ids[i])));
 
           // Set the return object on the array
           Nan::Set(a, arrayIndex++, Nan::New<v8::Value>(object));
@@ -71,7 +67,7 @@ void Method(const Nan::FunctionCallbackInfo<v8::Value>& info) {
       }
 
       // Release the handle to the process.
-      CloseHandle(hProcess);
+      CloseHandle(process_handle);
     }
   }
   
@@ -79,8 +75,8 @@ void Method(const Nan::FunctionCallbackInfo<v8::Value>& info) {
 }
 
 void Init(v8::Local<v8::Object> exports) {
-  exports->Set(Nan::New("hello").ToLocalChecked(),
-               Nan::New<v8::FunctionTemplate>(Method)->GetFunction());
+  exports->Set(Nan::New("getProcessList").ToLocalChecked(),
+               Nan::New<v8::FunctionTemplate>(GetProcessList)->GetFunction());
 }
 
 NODE_MODULE(hello, Init)
