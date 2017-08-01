@@ -22,6 +22,7 @@ DWORD GetParentPID(DWORD pid) {
 void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   DWORD process_ids[1024];
   DWORD process_ids_size;
+  v8::Local<v8::Value> process_objects[1024];
 
   if (!EnumProcesses(process_ids, sizeof(process_ids), &process_ids_size)) {
     info.GetReturnValue().SetUndefined();
@@ -29,11 +30,9 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   }
 
   DWORD process_ids_count = process_ids_size / sizeof(DWORD);
-
-  v8::Local<v8::Array> a = Nan::New<v8::Array>(process_ids_count);
-
-  unsigned int arrayIndex = 0;
-
+  
+  // Iterate over each process ID, fetching their process name and parent pid
+  unsigned int process_count = 0;
   for (unsigned int i = 0; i < process_ids_count; i++) {
     if (process_ids[i] != 0) {
       TCHAR process_name[MAX_PATH] = TEXT("<unknown>");
@@ -62,7 +61,7 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
                    Nan::New<v8::Number>(GetParentPID(process_ids[i])));
 
           // Set the return object on the array
-          Nan::Set(a, arrayIndex++, Nan::New<v8::Value>(object));
+          process_objects[process_count++] = Nan::New<v8::Value>(object);
         }
       }
 
@@ -70,8 +69,13 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
       CloseHandle(process_handle);
     }
   }
-  
-  info.GetReturnValue().Set(a);
+
+  // Transfer results into actual result object
+  v8::Local<v8::Array> result = Nan::New<v8::Array>(process_count);
+  for (unsigned int i = 0; i < process_count; i++) {
+    Nan::Set(result, i, process_objects[i]);
+  }
+  info.GetReturnValue().Set(result);
 }
 
 void Init(v8::Local<v8::Object> exports) {
