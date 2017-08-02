@@ -14,6 +14,7 @@ function buildProcessTree(processList, rootPid) {
 }
 
 function getProcessTree(rootPid) {
+  rootPid = rootPid || process.pid;
   return buildProcessTree(native.getProcessList(), rootPid);
 }
 

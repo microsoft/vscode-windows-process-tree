@@ -1,5 +1,49 @@
+# windows-process-tree
 
-# Contributing
+Quickly fetch a process tree information for a particular process ID on Windows using Node.js.
+
+## Usage
+
+(Fill me in!)
+
+## Why a native node module?
+
+The current convention is to run wmic.exe to query a particular process ID and then parse the output like so:
+
+```js
+let cp = require('child_process');
+
+function getChildProcessDetails(pid, cb) {
+    let args = ['process', 'where', `parentProcessId=${pid}`, 'get', 'ExecutablePath,ProcessId'];
+    cp.execFile('wmic.exe', args, (err, stdout, stderr) => {
+        if (err) {
+            throw new Error(err);
+        }
+        if (stderr.length > 0) {
+            cb([]);
+        }
+        var childProcessLines = stdout.split('\n').slice(1).filter(str => !/^\s*$/.test(str));
+        var childProcessDetails = childProcessLines.map(str => {
+            var s = str.split('  ');
+            return { executable: s[0], pid: Number(s[1]) };
+        });
+        cb(childProcessDetails);
+    });
+}
+```
+
+This has two problems:
+
+1. It takes > 100ms\* to spin up a process and get the output returned.
+2. It only goes one level deep. Meaning, if the process tree is deeply nested or processes in the tree have many children it will take a lot more time and need a bunch of processes launched.
+
+Both of which are only exacerbated by the fact that this information is something that a consumer may want to poll for.
+
+The native node module uses Windows APIs to get the process details and then they are organized into a tree, getting the entire tree's details in < 20ms\*.
+
+\* On my machine :slightly_smiling_face:
+
+## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
