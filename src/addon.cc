@@ -41,7 +41,7 @@ void GetRawProcessList(ProcessInfo process_info[1024], uint32_t* process_count) 
             process_info[*process_count].pid = process_entry.th32ProcessID;
             process_info[*process_count].ppid = process_entry.th32ParentProcessID;
             strcpy(process_info[*process_count].name, process_name);
-            *process_count++;
+            (*process_count)++;
           }
         }
 
