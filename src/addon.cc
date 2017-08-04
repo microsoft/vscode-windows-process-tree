@@ -10,8 +10,8 @@ struct ProcessInfo {
   DWORD ppid;
 };
 
-void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
-  ProcessInfo process_info[1024];
+void GetRawProcessList(ProcessInfo process_info[1024], uint32_t* process_count) {
+  *process_count = 0;
 
   // Fetch the parent IDs and store in a map for fast lookup, because
   // CreateToolhelp32Snapshot is a costly operation we only want to do it once.
@@ -20,7 +20,6 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   DWORD parent_pid = 0;
   HANDLE snapshot_handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   process_entry.dwSize = sizeof(PROCESSENTRY32);
-  uint32_t process_count = 0;
   if (Process32First(snapshot_handle, &process_entry)) {
     do {
       if (process_entry.th32ProcessID != 0) {
@@ -39,10 +38,10 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
             GetModuleBaseName(process_handle, modules, process_name,
                               sizeof(process_name) / sizeof(TCHAR));
 
-            process_info[process_count].pid = process_entry.th32ProcessID;
-            process_info[process_count].ppid = process_entry.th32ParentProcessID;
-            strcpy(process_info[process_count].name, process_name);
-            process_count++;
+            process_info[*process_count].pid = process_entry.th32ProcessID;
+            process_info[*process_count].ppid = process_entry.th32ParentProcessID;
+            strcpy(process_info[*process_count].name, process_name);
+            *process_count++;
           }
         }
 
@@ -52,6 +51,15 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
     } while (Process32Next(snapshot_handle, &process_entry));
   }
   CloseHandle(snapshot_handle);
+}
+
+void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Nan::HandleScope scope;
+
+  ProcessInfo process_info[1024];
+  uint32_t process_count;
+
+  GetRawProcessList(process_info, &process_count);
 
   // Transfer results into actual result object
   v8::Local<v8::Array> result = Nan::New<v8::Array>(process_count);
