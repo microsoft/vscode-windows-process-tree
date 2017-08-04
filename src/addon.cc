@@ -9,23 +9,6 @@ struct ProcessInfo {
   DWORD pid;
 };
 
-DWORD GetParentPID(DWORD pid) {
-  PROCESSENTRY32 process_entry = { 0 };
-  DWORD parent_pid = 0;
-  HANDLE handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-  process_entry.dwSize = sizeof(PROCESSENTRY32);
-  if (Process32First(handle, &process_entry)) {
-    do {
-      if (process_entry.th32ProcessID == pid) {
-        parent_pid = process_entry.th32ParentProcessID;
-        break;
-      }
-    } while (Process32Next(handle, &process_entry));
-  }
-  CloseHandle(handle);
-  return parent_pid;
-}
-
 void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   DWORD process_ids[1024];
   DWORD process_ids_size;
@@ -37,7 +20,7 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   }
 
   DWORD process_ids_count = process_ids_size / sizeof(DWORD);
-  
+
   // Iterate over each process ID, fetching the process name of each
   unsigned int process_count = 0;
   for (unsigned int i = 0; i < process_ids_count; i++) {
@@ -45,7 +28,7 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
       // Get a handle to the process.
       HANDLE process_handle = OpenProcess(
           PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, process_ids[i]);
-  
+
       if (process_handle != NULL) {
         HMODULE modules;
         DWORD modules_size;
@@ -54,9 +37,9 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
         if (EnumProcessModules(process_handle, &modules, sizeof(modules),
                                &modules_size)) {
           TCHAR process_name[MAX_PATH] = TEXT("<unknown>");
-          GetModuleBaseName(process_handle, modules, process_name, 
+          GetModuleBaseName(process_handle, modules, process_name,
                             sizeof(process_name) / sizeof(TCHAR));
-                                  
+
           // TODO: Use a parallel array to store name?
           process_info[process_count] = ProcessInfo();
           process_info[process_count].pid = process_ids[i];
@@ -95,7 +78,7 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& info) {
              Nan::New<v8::Number>(process_info[i].pid));
     Nan::Set(object, Nan::New<v8::String>("ppid").ToLocalChecked(),
         Nan::New<v8::Number>(pid_to_ppid_map[process_info[i].pid]));
-             
+
     Nan::Set(result, i, Nan::New<v8::Value>(object));
   }
   info.GetReturnValue().Set(result);
