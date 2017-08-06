@@ -5,8 +5,6 @@
 
 #include "process.h"
 
-#include <psapi.h>
-#include <string.h>
 #include <tlhelp32.h>
 
 void GetRawProcessList(ProcessInfo process_info[1024], uint32_t* process_count) {
