@@ -10,13 +10,17 @@ if (process.platform === 'win32') {
   var windowsProcessTree = require('windows-process-tree');
 
   child_process.spawn('cmd.exe');
-  console.log(windowsProcessTree(process.pid));
+  windowsProcessTree(process.pid, (tree) => {
+    console.log(tree);
+  });
   // { pid: 11168,
   //   name: 'node.exe',
   //   children:
   //    [ { pid: 1472, name: 'cmd.exe', children:[] },
 
-  console.log(windowsProcessTree(0));
+  windowsProcessTree(0, (tree) => {
+    console.log(tree);
+  });
   // undefined
 }
 ```
