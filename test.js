@@ -21,10 +21,23 @@ function pollUntil(makePromise, cb, interval, timeout) {
 }
 
 describe('getProcessList', () => {
-  it('should return a list containing this process', () => {
+  it('should return a list containing this process', (done) => {
     native.getProcessList((list) => {
       assert.notEqual(list.find(p => p.pid === process.pid), undefined);
+      done();
     });
+  });
+
+  it('should handle multiple calls gracefully', (done) => {
+    let counter = 0;
+    const callback = (list) => {
+      assert.notEqual(list.find(p => p.pid === process.pid), undefined);
+      if (++counter === 2) {
+        done();
+      }
+    };
+    native.getProcessList(callback);
+    native.getProcessList(callback);
   });
 });
 
