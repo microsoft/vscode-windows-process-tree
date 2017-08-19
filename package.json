@@ -1,12 +1,12 @@
 {
   "name": "windows-process-tree",
   "version": "0.1.0",
-  "description": "",
+  "description": "Fetch a Windows process tree fast",
   "main": "lib/index.js",
   "scripts": {
     "test": "mocha"
   },
-  "author": "",
+  "author": "Microsoft Corporation",
   "license": "MIT",
   "dependencies": {
     "bindings": "^1.3.0",
