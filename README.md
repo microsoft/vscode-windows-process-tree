@@ -4,7 +4,7 @@ Quickly fetch a process tree information for a particular process ID on Windows 
 
 ## Usage
 
-```ts
+```js
 if (process.platform === 'win32') {
   var child_process = require('child_process');
   var windowsProcessTree = require('windows-process-tree');
