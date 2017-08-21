@@ -5,8 +5,9 @@
 
 var assert = require('assert');
 var child_process = require('child_process');
-var native = require('bindings')('windows_process_tree');
 var getProcessTree = require('.');
+
+var native = require('./build/Release/windows_process_tree.node');
 
 function pollUntil(makePromise, cb, interval, timeout) {
   makePromise().then((success) => {
