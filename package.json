@@ -13,5 +13,8 @@
   },
   "devDependencies": {
     "mocha": "^3.5.0"
-  }
+  },
+  "os": [
+    "win32"
+  ]
 }
