@@ -8,6 +8,14 @@
   },
   "author": "Microsoft Corporation",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Microsoft/vscode-windows-process-tree.git"
+  },
+  "homepage": "https://github.com/Microsoft/vscode-windows-process-tree",
+  "bugs": {
+    "url": "https://github.com/Microsoft/vscode-windows-process-tree/issues"
+  },
   "dependencies": {
     "nan": "^2.6.2"
   },
