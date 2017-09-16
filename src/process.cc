@@ -23,7 +23,7 @@ void GetRawProcessList(ProcessInfo process_info[1024], uint32_t* process_count) 
         strcpy(process_info[*process_count].name, process_entry.szExeFile);
         (*process_count)++;
       }
-    } while (Process32Next(snapshot_handle, &process_entry));
+    } while (*process_count < 1024 && Process32Next(snapshot_handle, &process_entry));
   }
   CloseHandle(snapshot_handle);
 }
