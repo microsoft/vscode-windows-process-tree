@@ -9,7 +9,8 @@
       ],
       "include_dirs": [
         "<!(node -e \"require('nan')\")"
-      ]
+      ],
+      "libraries": [ 'psapi.lib' ]
     }
   ]
 }

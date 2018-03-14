@@ -13,8 +13,15 @@ struct ProcessInfo {
   TCHAR name[MAX_PATH];
   DWORD pid;
   DWORD ppid;
+  DWORD memory; // Reported in bytes
 };
 
-void GetRawProcessList(ProcessInfo process_info[1024], uint32_t* process_count);
+enum ProcessDataFlags {
+  MEMORY = 1
+};
+
+void GetRawProcessList(ProcessInfo process_info[1024], uint32_t* process_count, DWORD* flags);
+
+void GetProcessMemoryUsage(ProcessInfo process_info[1024], uint32_t* process_count);
 
 #endif  // SRC_PROCESS_H_

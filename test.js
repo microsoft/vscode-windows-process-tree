@@ -22,6 +22,21 @@ function pollUntil(makePromise, cb, interval, timeout) {
 }
 
 describe('getProcessList', () => {
+  it('should throw if arguments are not provided', (done) => {
+    assert.throws(() => native.getProcessList());
+    done();
+  });
+
+  it('should throw if the first argument is not a function', (done) => {
+    assert.throws(() => native.getProcessList(1));
+    done();
+  });
+
+  it('should throw if the second argument is not a number', (done) => {
+    assert.throws(() => native.getProcessList(() => {}, "number"));
+    done();
+  });
+
   it('should return a list containing this process', (done) => {
     native.getProcessList((list) => {
       assert.notEqual(list.find(p => p.pid === process.pid), undefined);
@@ -39,6 +54,19 @@ describe('getProcessList', () => {
     };
     native.getProcessList(callback);
     native.getProcessList(callback);
+  });
+
+  it('should return memory information only when the flag is set', (done) => {
+    // Memory should be undefined when flag is not set
+    native.getProcessList((list) => {
+      assert.equal(list.every((p => p.memory === undefined)), true);
+
+      // Memory should be a number when flag is set
+      native.getProcessList((list) => {
+        assert.equal(list.some((p => p.memory !== 0)), true);
+        done();
+      }, 1);
+    });
   });
 });
 
