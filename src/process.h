@@ -17,6 +17,7 @@ struct ProcessInfo {
 };
 
 enum ProcessDataFlags {
+  NONE = 0,
   MEMORY = 1
 };
 

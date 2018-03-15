@@ -7,6 +7,7 @@
 
 declare module 'windows-process-tree' {
 	export enum ProcessDataFlag {
+		None = 0,
 		Memory = 1
 	}
 
