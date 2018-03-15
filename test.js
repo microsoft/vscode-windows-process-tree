@@ -41,7 +41,7 @@ describe('getProcessList', () => {
     native.getProcessList((list) => {
       assert.notEqual(list.find(p => p.pid === process.pid), undefined);
       done();
-    });
+    }, 0);
   });
 
   it('should handle multiple calls gracefully', (done) => {
@@ -52,8 +52,8 @@ describe('getProcessList', () => {
         done();
       }
     };
-    native.getProcessList(callback);
-    native.getProcessList(callback);
+    native.getProcessList(callback, 0);
+    native.getProcessList(callback, 0);
   });
 
   it('should return memory information only when the flag is set', (done) => {
@@ -66,7 +66,7 @@ describe('getProcessList', () => {
         assert.equal(list.some((p => p.memory !== 0)), true);
         done();
       }, 1);
-    });
+    }, 0);
   });
 });
 
@@ -87,9 +87,20 @@ describe('getProcessTree', () => {
     getProcessTree(process.pid, (tree) => {
       assert.equal(tree.name, 'node.exe');
       assert.equal(tree.pid, process.pid);
+      assert.equal(tree.memory, undefined);
       assert.equal(tree.children.length, 0);
       done();
     });
+  });
+
+  it('should return a tree containing this process\'s memory if the flag is set', done => {
+    getProcessTree(process.pid, (tree) => {
+      assert.equal(tree.name, 'node.exe');
+      assert.equal(tree.pid, process.pid);
+      assert.notEqual(tree.memory, undefined);
+      assert.equal(tree.children.length, 0);
+      done();
+    }, 1);
   });
 
   it('should return a tree containing this process\'s child processes', done => {
