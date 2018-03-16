@@ -12,7 +12,7 @@
 class Worker : public Nan::AsyncWorker {
  public:
   Worker(ProcessInfo* process_info, uint32_t* process_count, 
-      Nan::Callback* callback);
+      Nan::Callback* callback, DWORD* process_data_flags);
   ~Worker();
 
   void Execute();
@@ -20,6 +20,7 @@ class Worker : public Nan::AsyncWorker {
  private:
   ProcessInfo *process_info;
   uint32_t* process_count;
+  DWORD* process_data_flags;
 };
 
 #endif  // SRC_WORKER_H_

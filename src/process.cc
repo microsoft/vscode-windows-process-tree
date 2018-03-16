@@ -6,8 +6,9 @@
 #include "process.h"
 
 #include <tlhelp32.h>
+#include <psapi.h>
 
-void GetRawProcessList(ProcessInfo process_info[1024], uint32_t* process_count) {
+void GetRawProcessList(ProcessInfo process_info[1024], uint32_t* process_count, DWORD* process_data_flags) {
   *process_count = 0;
 
   // Fetch the PID and PPIDs
@@ -20,10 +21,33 @@ void GetRawProcessList(ProcessInfo process_info[1024], uint32_t* process_count) 
       if (process_entry.th32ProcessID != 0) {
         process_info[*process_count].pid = process_entry.th32ProcessID;
         process_info[*process_count].ppid = process_entry.th32ParentProcessID;
+
+        if (MEMORY & *process_data_flags) {
+          GetProcessMemoryUsage(process_info, process_count);
+        }
+
         strcpy(process_info[*process_count].name, process_entry.szExeFile);
         (*process_count)++;
       }
     } while (*process_count < 1024 && Process32Next(snapshot_handle, &process_entry));
   }
   CloseHandle(snapshot_handle);
+}
+
+void GetProcessMemoryUsage(ProcessInfo process_info[1024], uint32_t* process_count) {
+  DWORD pid = process_info[*process_count].pid;
+  HANDLE hProcess;
+  PROCESS_MEMORY_COUNTERS pmc;
+
+  hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid);
+
+  if (hProcess == NULL) {
+    return;
+  }
+
+  if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc))) {
+    process_info[*process_count].memory = (DWORD)pmc.WorkingSetSize;
+  }
+ 
+  CloseHandle(hProcess);
 }

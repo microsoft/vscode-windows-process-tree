@@ -8,17 +8,19 @@
 Worker::Worker(
     ProcessInfo* process_info,
     uint32_t* process_count,
-    Nan::Callback* callback) 
+    Nan::Callback* callback,
+    DWORD* process_data_flags) 
       : AsyncWorker(callback),
         process_count(process_count),
-        process_info(process_info) {
+        process_info(process_info),
+        process_data_flags(process_data_flags) {
 }
 
 Worker::~Worker() {
 }
 
 void Worker::Execute() {
-  GetRawProcessList(process_info, process_count);
+  GetRawProcessList(process_info, process_count, process_data_flags);
 }
 
 void Worker::HandleOKCallback() {
@@ -33,6 +35,12 @@ void Worker::HandleOKCallback() {
               Nan::New<v8::Number>(process_info[i].pid));
     Nan::Set(object, Nan::New<v8::String>("ppid").ToLocalChecked(),
               Nan::New<v8::Number>(process_info[i].ppid));
+
+    // Property should be undefined when memory flag isn't set
+    if (MEMORY & *process_data_flags) {
+      Nan::Set(object, Nan::New<v8::String>("memory").ToLocalChecked(),
+              Nan::New<v8::Number>(process_info[i].memory));
+    }
 
     Nan::Set(result, i, Nan::New<v8::Value>(object));
   }
