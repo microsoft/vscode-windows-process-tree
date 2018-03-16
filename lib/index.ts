@@ -33,6 +33,7 @@ function buildProcessTree(processList: IProcessInfo[], rootPid: number): IProces
     pid: rootProcess.pid,
     name: rootProcess.name,
     memory: rootProcess.memory,
+    cpu: rootProcess.pcpu,
     children: childIndexes.map(c => buildProcessTree(processList, c.pid))
   };
 }

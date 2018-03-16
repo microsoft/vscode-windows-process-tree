@@ -13,6 +13,7 @@ declare module 'windows-process-tree' {
     pid: number;
     name: string;
     memory?: number;
+    cpu?: number;
     children: IProcessTreeNode[];
   }
 

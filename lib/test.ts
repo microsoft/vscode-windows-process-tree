@@ -68,6 +68,17 @@ describe('getProcessList', () => {
       }, ProcessDataFlag.Memory);
     }, ProcessDataFlag.None);
   });
+
+  it('should return cpu information only when the flag is set', (done) => {
+    native.getProcessList((list) => {
+      assert.equal(list.every(p => p.pcpu === undefined), true);
+
+      native.getProcessList((list) => {
+        assert.equal(list.some(p => p.pcpu > 0), true);
+        done();
+      }, 2);
+    }, 0);
+  });
 });
 
 describe('getProcessTree', () => {
@@ -101,6 +112,16 @@ describe('getProcessTree', () => {
       assert.equal(tree.children.length, 0);
       done();
     }, ProcessDataFlag.Memory);
+  });
+
+  it('should return a tree containing this process\'s cpu if the flag is set', done => {
+    getProcessTree(process.pid, (tree) => {
+      assert.equal(tree.name, 'node.exe');
+      assert.equal(tree.pid, process.pid);
+      assert.notEqual(tree.cpu, undefined);
+      assert.equal(tree.children.length, 0);
+      done();
+    }, 2);
   });
 
   it('should return a tree containing this process\'s child processes', done => {

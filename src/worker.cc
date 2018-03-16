@@ -42,6 +42,11 @@ void Worker::HandleOKCallback() {
               Nan::New<v8::Number>(process_info[i].memory));
     }
 
+    if (CPU & *process_data_flags) {
+      Nan::Set(object, Nan::New<v8::String>("pcpu").ToLocalChecked(),
+              Nan::New<v8::Number>(process_info[i].cpu.pcpu));
+    }
+
     Nan::Set(result, i, Nan::New<v8::Value>(object));
   }
   v8::Local<v8::Value> argv[] = { result };
