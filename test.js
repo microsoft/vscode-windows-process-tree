@@ -59,11 +59,11 @@ describe('getProcessList', () => {
   it('should return memory information only when the flag is set', (done) => {
     // Memory should be undefined when flag is not set
     native.getProcessList((list) => {
-      assert.equal(list.every((p => p.memory === undefined)), true);
+      assert.equal(list.every(p => p.memory === undefined), true);
 
       // Memory should be a number when flag is set
       native.getProcessList((list) => {
-        assert.equal(list.some((p => p.memory !== 0)), true);
+        assert.equal(list.some(p => p.memory > 0), true);
         done();
       }, 1);
     }, 0);

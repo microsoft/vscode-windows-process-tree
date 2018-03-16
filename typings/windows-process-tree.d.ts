@@ -18,7 +18,5 @@ declare module 'windows-process-tree' {
 		children: ProcessTreeNode[]
 	}
 
-	function get(rootPid: number, callback: (tree: ProcessTreeNode) => void, flag?: ProcessDataFlag): void;
-
-	export = get;
+	export function get(rootPid: number, callback: (tree: ProcessTreeNode) => void, flags?: ProcessDataFlag): void;
 }
