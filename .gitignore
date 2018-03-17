@@ -1,2 +1,5 @@
 build
 node_modules
+**/*.js
+**/*.map
+test.d.ts
