@@ -4,23 +4,24 @@
  *--------------------------------------------------------------------------------------------*/
 
 const native = require('../build/Release/windows_process_tree.node');
+import { IProcessTreeNode } from 'windows-process-tree';
 
 export enum ProcessDataFlag {
-  None = 0,
-  Memory = 1
-}
+    None = 0,
+    Memory = 1
+  }
 
-export interface ProcessTreeNode {
-  pid: number;
-  name: string;
-  memory?: number;
-  children: ProcessTreeNode[];
+interface IProcessInfo {
+    pid: number;
+    ppid: number;
+    name: string;
+    memory?: number;
 }
 
 let requestInProgress = false;
 const requestQueue = [];
 
-function buildProcessTree(processList, rootPid) {
+function buildProcessTree(processList: IProcessInfo[], rootPid: number): IProcessTreeNode {
   const rootIndex = processList.findIndex(v => v.pid === rootPid);
   if (rootIndex === -1) {
     return undefined;
@@ -36,7 +37,7 @@ function buildProcessTree(processList, rootPid) {
   };
 }
 
-export function getProcessTree(rootPid: number, callback: (tree: ProcessTreeNode) => void, flags?: ProcessDataFlag): void {
+export function getProcessTree(rootPid: number, callback: (tree: IProcessTreeNode) => void, flags?: ProcessDataFlag): void {
   // Push the request to the queue
   requestQueue.push({
     callback: callback,

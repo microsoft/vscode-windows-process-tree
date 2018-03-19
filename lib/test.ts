@@ -5,11 +5,11 @@
 
 import * as assert from 'assert';
 import * as child_process from 'child_process';
-import { getProcessTree, ProcessDataFlag } from './lib/index';
+import { getProcessTree, ProcessDataFlag } from './index';
 
-const native = require('./build/Release/windows_process_tree.node');
+const native = require('../build/Release/windows_process_tree.node');
 
-function pollUntil(makePromise, cb, interval, timeout) {
+function pollUntil(makePromise: () => Promise<boolean>, cb: () => void, interval: number, timeout: number): void {
   makePromise().then((success) => {
     if (success) {
       cb();
