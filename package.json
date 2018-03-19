@@ -5,7 +5,11 @@
   "main": "lib/index.js",
   "types": "typings/windows-process-tree.d.ts",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha lib/test.js",
+    "prepublish": "tsc",
+    "postinstall": "tsc",
+    "watch": "tsc -w",
+    "lint": "tslint lib/*.ts typings/*.ts *.ts"
   },
   "author": "Microsoft Corporation",
   "license": "MIT",
@@ -21,7 +25,11 @@
     "nan": "^2.6.2"
   },
   "devDependencies": {
-    "mocha": "^3.5.0"
+    "mocha": "^3.5.0",
+    "typescript": "2.7.2",
+    "tslint": "5.9.1",
+    "@types/node": "9.4.7",
+    "@types/mocha": "2.2.48"
   },
   "os": [
     "win32"

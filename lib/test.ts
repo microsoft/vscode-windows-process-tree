@@ -3,13 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-var assert = require('assert');
-var child_process = require('child_process');
-var getProcessTree = require('.');
+import * as assert from 'assert';
+import * as child_process from 'child_process';
+import { getProcessTree, ProcessDataFlag } from './index';
 
-var native = require('./build/Release/windows_process_tree.node');
+const native = require('../build/Release/windows_process_tree.node');
 
-function pollUntil(makePromise, cb, interval, timeout) {
+function pollUntil(makePromise: () => Promise<boolean>, cb: () => void, interval: number, timeout: number): void {
   makePromise().then((success) => {
     if (success) {
       cb();
@@ -33,7 +33,7 @@ describe('getProcessList', () => {
   });
 
   it('should throw if the second argument is not a number', (done) => {
-    assert.throws(() => native.getProcessList(() => {}, "number"));
+    assert.throws(() => native.getProcessList(() => {}, 'number'));
     done();
   });
 
@@ -52,8 +52,8 @@ describe('getProcessList', () => {
         done();
       }
     };
-    native.getProcessList(callback, 0);
-    native.getProcessList(callback, 0);
+    native.getProcessList(callback, ProcessDataFlag.None);
+    native.getProcessList(callback, ProcessDataFlag.None);
   });
 
   it('should return memory information only when the flag is set', (done) => {
@@ -65,8 +65,8 @@ describe('getProcessList', () => {
       native.getProcessList((list) => {
         assert.equal(list.some(p => p.memory > 0), true);
         done();
-      }, 1);
-    }, 0);
+      }, ProcessDataFlag.Memory);
+    }, ProcessDataFlag.None);
   });
 });
 
@@ -100,7 +100,7 @@ describe('getProcessTree', () => {
       assert.notEqual(tree.memory, undefined);
       assert.equal(tree.children.length, 0);
       done();
-    }, 1);
+    }, ProcessDataFlag.Memory);
   });
 
   it('should return a tree containing this process\'s child processes', done => {

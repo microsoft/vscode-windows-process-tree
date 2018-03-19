@@ -3,18 +3,31 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-let native = require('../build/Release/windows_process_tree.node');
+const native = require('../build/Release/windows_process_tree.node');
+import { IProcessTreeNode } from 'windows-process-tree';
+
+export enum ProcessDataFlag {
+    None = 0,
+    Memory = 1
+  }
+
+interface IProcessInfo {
+    pid: number;
+    ppid: number;
+    name: string;
+    memory?: number;
+}
 
 let requestInProgress = false;
-let requestQueue = [];
+const requestQueue = [];
 
-function buildProcessTree(processList, rootPid) {
-  let rootIndex = processList.findIndex(v => v.pid === rootPid);
+function buildProcessTree(processList: IProcessInfo[], rootPid: number): IProcessTreeNode {
+  const rootIndex = processList.findIndex(v => v.pid === rootPid);
   if (rootIndex === -1) {
     return undefined;
   }
-  let rootProcess = processList[rootIndex];
-  let childIndexes = processList.filter(v => v.ppid === rootPid);
+  const rootProcess = processList[rootIndex];
+  const childIndexes = processList.filter(v => v.ppid === rootPid);
 
   return {
     pid: rootProcess.pid,
@@ -24,11 +37,11 @@ function buildProcessTree(processList, rootPid) {
   };
 }
 
-function getProcessTree(rootPid, callback, flags) {
+export function getProcessTree(rootPid: number, callback: (tree: IProcessTreeNode) => void, flags?: ProcessDataFlag): void {
   // Push the request to the queue
   requestQueue.push({
     callback: callback,
-    rootPid: rootPid || process.pid
+    rootPid: rootPid
   });
 
   // Only make a new request if there is not currently a request in progress.
@@ -46,5 +59,3 @@ function getProcessTree(rootPid, callback, flags) {
     }, flags || 0);
   }
 }
-
-module.exports = getProcessTree;
