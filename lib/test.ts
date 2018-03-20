@@ -5,7 +5,7 @@
 
 import * as assert from 'assert';
 import * as child_process from 'child_process';
-import { getProcessTree, ProcessDataFlag } from './index';
+import { getProcessTree, getProcessList, getProcessCpuUsage, ProcessDataFlag } from './index';
 
 const native = require('../build/Release/windows_process_tree.node');
 
@@ -21,7 +21,7 @@ function pollUntil(makePromise: () => Promise<boolean>, cb: () => void, interval
   });
 }
 
-describe('getProcessList', () => {
+describe('getRawProcessList', () => {
   it('should throw if arguments are not provided', (done) => {
     assert.throws(() => native.getProcessList());
     done();
@@ -68,17 +68,75 @@ describe('getProcessList', () => {
       }, ProcessDataFlag.Memory);
     }, ProcessDataFlag.None);
   });
+});
 
-  it('should return cpu information only when the flag is set', (done) => {
-    native.getProcessList((list) => {
-      assert.equal(list.every(p => p.pcpu === undefined), true);
+describe('getProcessList', () => {
+  let cps;
 
-      native.getProcessList((list) => {
-        assert.equal(list.some(p => p.pcpu > 0), true);
-        done();
-      }, 2);
-    }, 0);
+  beforeEach(() => {
+    cps = [];
   });
+
+  afterEach(() => {
+    cps.forEach(cp => {
+      cp.kill();
+    });
+  });
+
+  it('should return a list containing this process', (done) => {
+    getProcessList(process.pid, (list) => {
+      assert.equal(list.length, 1);
+      assert.equal(list[0].name, 'node.exe');
+      assert.equal(list[0].pid, process.pid);
+      assert.equal(list[0].memory, undefined);
+      done();
+    });
+  });
+
+  it('should return a list containing this process\'s memory if the flag is set', done => {
+    getProcessList(process.pid, (list) => {
+      assert.equal(list.length, 1);
+      assert.equal(list[0].name, 'node.exe');
+      assert.equal(list[0].pid, process.pid);
+      assert.equal(typeof list[0].memory, 'number');
+      done();
+    }, ProcessDataFlag.Memory);
+  });
+
+  it('should return a tree containing this process\'s child processes', done => {
+    cps.push(child_process.spawn('cmd.exe'));
+    pollUntil(() => {
+      return new Promise((resolve) => {
+        getProcessList(process.pid, (list) => {
+          resolve(list.length === 2 && list[0].pid === process.pid && list[1].pid === cps[0].pid);
+        });
+      });
+    }, () => done(), 20, 500);
+  });
+});
+
+describe('getProcessCpuUsage', () => {
+
+  it('should get process cpu usage', (done) => {
+    getProcessList(process.pid, (list) => {
+      assert.equal(list.length, 1);
+      assert.equal(list[0].name, 'node.exe');
+      assert.equal(list[0].pid, process.pid);
+      assert.equal(list[0].memory, undefined);
+      assert.equal((list[0] as any).cpu, undefined);
+
+      getProcessCpuUsage(list, (annotatedList) => {
+        assert.equal(annotatedList.length, 1);
+        assert.equal(annotatedList[0].name, 'node.exe');
+        assert.equal(annotatedList[0].pid, process.pid);
+        assert.equal(annotatedList[0].memory, undefined);
+        assert.equal(typeof annotatedList[0].cpu, 'number');
+        assert.equal(0 <= annotatedList[0].cpu && annotatedList[0].cpu <= 100, true);
+        done();
+      });
+    });
+  });
+
 });
 
 describe('getProcessTree', () => {
@@ -112,16 +170,6 @@ describe('getProcessTree', () => {
       assert.equal(tree.children.length, 0);
       done();
     }, ProcessDataFlag.Memory);
-  });
-
-  it('should return a tree containing this process\'s cpu if the flag is set', done => {
-    getProcessTree(process.pid, (tree) => {
-      assert.equal(tree.name, 'node.exe');
-      assert.equal(tree.pid, process.pid);
-      assert.notEqual(tree.cpu, undefined);
-      assert.equal(tree.children.length, 0);
-      done();
-    }, 2);
   });
 
   it('should return a tree containing this process\'s child processes', done => {

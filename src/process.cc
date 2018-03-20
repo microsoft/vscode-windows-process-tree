@@ -26,22 +26,10 @@ void GetRawProcessList(ProcessInfo process_info[1024], uint32_t* process_count, 
           GetProcessMemoryUsage(process_info, process_count);
         }
 
-        if (CPU & *process_data_flags) {
-          GetCpuUsage(process_info, process_count, true);
-        }
-
         strcpy(process_info[*process_count].name, process_entry.szExeFile);
         (*process_count)++;
       }
     } while (*process_count < 1024 && Process32Next(snapshot_handle, &process_entry));
-  }
-
-  if (CPU & *process_data_flags) {
-    Sleep(1000);
-
-    for (uint32_t i = 0; i < *process_count; i++) {
-      GetCpuUsage(process_info, &i, false);
-    }
   }
 
   CloseHandle(snapshot_handle);
@@ -74,8 +62,8 @@ ULONGLONG GetTotalTime(const FILETIME* kernelTime, const FILETIME* userTime) {
   return kt.QuadPart + ut.QuadPart;
 }
 
-void GetCpuUsage(ProcessInfo process_info[1024], uint32_t* process_count, BOOL first_pass) {
-  DWORD pid = process_info[*process_count].pid;
+void GetCpuUsage(Cpu* cpu_info, uint32_t* process_index, BOOL first_pass) {
+  DWORD pid = cpu_info[*process_index].pid;
   HANDLE hProcess;
 
   hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid);
@@ -89,15 +77,14 @@ void GetCpuUsage(ProcessInfo process_info[1024], uint32_t* process_count, BOOL f
   if (GetProcessTimes(hProcess, &creationTime, &exitTime, &kernelTime, &userTime)
     && GetSystemTimes(&sysIdleTime, &sysKernelTime, &sysUserTime)) {
       if (first_pass) {
-        process_info[*process_count].cpu.initialProcRunTime = GetTotalTime(&kernelTime, &userTime);
-        process_info[*process_count].cpu.initialSystemTime = GetTotalTime(&sysKernelTime, &sysUserTime);
+        cpu_info[*process_index].initialProcRunTime = GetTotalTime(&kernelTime, &userTime);
+        cpu_info[*process_index].initialSystemTime = GetTotalTime(&sysKernelTime, &sysUserTime);
       } else {
         ULONGLONG endProcTime = GetTotalTime(&kernelTime, &userTime);
         ULONGLONG endSysTime = GetTotalTime(&sysKernelTime, &sysUserTime);
 
-        process_info[*process_count].cpu.pcpu = 100.0 * (endProcTime - process_info[*process_count].cpu.initialProcRunTime) / (endSysTime - process_info[*process_count].cpu.initialSystemTime);
+        cpu_info[*process_index].cpu = 100.0 * (endProcTime - cpu_info[*process_index].initialProcRunTime) / (endSysTime - cpu_info[*process_index].initialSystemTime);
       }
-    
   }
 
   CloseHandle(hProcess);

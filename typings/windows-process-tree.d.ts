@@ -9,13 +9,27 @@ declare module 'windows-process-tree' {
     Memory = 1
   }
 
-  export interface IProcessTreeNode {
+  export interface IProcessInfo {
+    pid: number;
+    ppid: number;
+    name: string;
+    memory?: number;
+  }
+
+  export interface IProcessCpuInfo extends IProcessInfo {
+    cpu?: number;
+  }
+
+  export interface IProcessTreeNode  {
     pid: number;
     name: string;
     memory?: number;
-    cpu?: number;
     children: IProcessTreeNode[];
   }
 
   export function getProcessTree(rootPid: number, callback: (tree: IProcessTreeNode) => void, flags?: ProcessDataFlag): void;
+
+  export function getProcessList(rootPid: number, callback: (processList: IProcessInfo[]) => void, flags?: ProcessDataFlag): void;
+
+  export function getProcessCpuUsage(processList: IProcessInfo[], callback: (processListWithCpu: IProcessCpuInfo[]) => void);
 }
