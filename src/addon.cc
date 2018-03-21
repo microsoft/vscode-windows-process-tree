@@ -6,6 +6,7 @@
 #include <nan.h>
 #include "process.h"
 #include "worker.h"
+#include <cmath>
 
 void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& args) {
   ProcessInfo process_info[1024];
@@ -64,7 +65,6 @@ void GetProcessCpuUsage(const Nan::FunctionCallbackInfo<v8::Value>& args) {
   // Sleep for one second
   Sleep(1000);
 
-
   // Sample counters again and complete CPU usage calculation
   for (uint32_t i = 0; i < count; i++) {
     GetCpuUsage(cpu_info, &i, false);
@@ -74,10 +74,12 @@ void GetProcessCpuUsage(const Nan::FunctionCallbackInfo<v8::Value>& args) {
 
   v8::Local<v8::Array> result = Nan::New<v8::Array>(count);
   for (uint32_t i = 0; i < count; i++) {
-    // Should this be cloned?
     v8::Local<v8::Object> object = processes->Get(Nan::New<v8::Integer>(i))->ToObject();
-    Nan::Set(object, Nan::New<v8::String>("cpu").ToLocalChecked(),
-              Nan::New<v8::Number>(cpu_info[i].cpu));
+
+    if (!std::isnan(cpu_info[i].cpu)) {
+      Nan::Set(object, Nan::New<v8::String>("cpu").ToLocalChecked(),
+                Nan::New<v8::Number>(cpu_info[i].cpu));
+    }
 
     Nan::Set(result, i, Nan::New<v8::Value>(object));
   }

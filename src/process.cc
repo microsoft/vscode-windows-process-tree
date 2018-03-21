@@ -7,6 +7,7 @@
 
 #include <tlhelp32.h>
 #include <psapi.h>
+#include <limits>
 
 void GetRawProcessList(ProcessInfo process_info[1024], uint32_t* process_count, DWORD* process_data_flags) {
   *process_count = 0;
@@ -51,6 +52,10 @@ void GetProcessMemoryUsage(ProcessInfo process_info[1024], uint32_t* process_cou
   }
 }
 
+// Per documentation, it is not recommended to add or subtract values from the FILETIME
+// structure, or to cast it to ULARGE_INTEGER as this can cause alignment faults on 64-bit Windows.
+// Copy the high and low part to a ULARGE_INTEGER and peform arithmetic on that instead.
+// See https://msdn.microsoft.com/en-us/library/windows/desktop/ms724284(v=vs.85).aspx
 ULONGLONG GetTotalTime(const FILETIME* kernelTime, const FILETIME* userTime) {
   ULARGE_INTEGER kt, ut;
   kt.LowPart = (*kernelTime).dwLowDateTime;
@@ -76,15 +81,17 @@ void GetCpuUsage(Cpu* cpu_info, uint32_t* process_index, BOOL first_pass) {
   FILETIME sysIdleTime, sysKernelTime, sysUserTime;
   if (GetProcessTimes(hProcess, &creationTime, &exitTime, &kernelTime, &userTime)
     && GetSystemTimes(&sysIdleTime, &sysKernelTime, &sysUserTime)) {
-      if (first_pass) {
-        cpu_info[*process_index].initialProcRunTime = GetTotalTime(&kernelTime, &userTime);
-        cpu_info[*process_index].initialSystemTime = GetTotalTime(&sysKernelTime, &sysUserTime);
-      } else {
-        ULONGLONG endProcTime = GetTotalTime(&kernelTime, &userTime);
-        ULONGLONG endSysTime = GetTotalTime(&sysKernelTime, &sysUserTime);
+    if (first_pass) {
+      cpu_info[*process_index].initialProcRunTime = GetTotalTime(&kernelTime, &userTime);
+      cpu_info[*process_index].initialSystemTime = GetTotalTime(&sysKernelTime, &sysUserTime);
+    } else {
+      ULONGLONG endProcTime = GetTotalTime(&kernelTime, &userTime);
+      ULONGLONG endSysTime = GetTotalTime(&sysKernelTime, &sysUserTime);
 
-        cpu_info[*process_index].cpu = 100.0 * (endProcTime - cpu_info[*process_index].initialProcRunTime) / (endSysTime - cpu_info[*process_index].initialSystemTime);
-      }
+      cpu_info[*process_index].cpu = 100.0 * (endProcTime - cpu_info[*process_index].initialProcRunTime) / (endSysTime - cpu_info[*process_index].initialSystemTime);
+    }
+  } else {
+    cpu_info[*process_index].cpu = std::numeric_limits<double>::quiet_NaN();
   }
 
   CloseHandle(hProcess);

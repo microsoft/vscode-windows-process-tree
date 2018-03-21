@@ -118,14 +118,7 @@ describe('getProcessList', () => {
 describe('getProcessCpuUsage', () => {
 
   it('should get process cpu usage', (done) => {
-    getProcessList(process.pid, (list) => {
-      assert.equal(list.length, 1);
-      assert.equal(list[0].name, 'node.exe');
-      assert.equal(list[0].pid, process.pid);
-      assert.equal(list[0].memory, undefined);
-      assert.equal((list[0] as any).cpu, undefined);
-
-      getProcessCpuUsage(list, (annotatedList) => {
+      getProcessCpuUsage([{ pid: process.pid, ppid: process.ppid, name: 'node.exe' }], (annotatedList) => {
         assert.equal(annotatedList.length, 1);
         assert.equal(annotatedList[0].name, 'node.exe');
         assert.equal(annotatedList[0].pid, process.pid);
@@ -133,10 +126,22 @@ describe('getProcessCpuUsage', () => {
         assert.equal(typeof annotatedList[0].cpu, 'number');
         assert.equal(0 <= annotatedList[0].cpu && annotatedList[0].cpu <= 100, true);
         done();
-      });
     });
   });
 
+  it('should handle multiple calls gracefully', function (done: MochaDone): void {
+    this.timeout(3000);
+
+    let counter = 0;
+    const callback = (list) => {
+      assert.notEqual(list.find(p => p.pid === process.pid), undefined);
+      if (++counter === 2) {
+        done();
+      }
+    };
+    getProcessCpuUsage([{ pid: process.pid, ppid: process.ppid, name: 'node.exe' }], callback);
+    getProcessCpuUsage([{ pid: process.pid, ppid: process.ppid, name: 'node.exe' }], callback);
+  });
 });
 
 describe('getProcessTree', () => {

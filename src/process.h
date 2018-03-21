@@ -25,8 +25,7 @@ struct ProcessInfo {
 
 enum ProcessDataFlags {
   NONE = 0,
-  MEMORY = 1,
-  CPU = 2
+  MEMORY = 1
 };
 
 void GetRawProcessList(ProcessInfo process_info[1024], uint32_t* process_count, DWORD* flags);
