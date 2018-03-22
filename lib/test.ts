@@ -5,7 +5,7 @@
 
 import * as assert from 'assert';
 import * as child_process from 'child_process';
-import { getProcessTree, ProcessDataFlag } from './index';
+import { getProcessTree, getProcessList, getProcessCpuUsage, ProcessDataFlag } from './index';
 
 const native = require('../build/Release/windows_process_tree.node');
 
@@ -21,7 +21,7 @@ function pollUntil(makePromise: () => Promise<boolean>, cb: () => void, interval
   });
 }
 
-describe('getProcessList', () => {
+describe('getRawProcessList', () => {
   it('should throw if arguments are not provided', (done) => {
     assert.throws(() => native.getProcessList());
     done();
@@ -67,6 +67,80 @@ describe('getProcessList', () => {
         done();
       }, ProcessDataFlag.Memory);
     }, ProcessDataFlag.None);
+  });
+});
+
+describe('getProcessList', () => {
+  let cps;
+
+  beforeEach(() => {
+    cps = [];
+  });
+
+  afterEach(() => {
+    cps.forEach(cp => {
+      cp.kill();
+    });
+  });
+
+  it('should return a list containing this process', (done) => {
+    getProcessList(process.pid, (list) => {
+      assert.equal(list.length, 1);
+      assert.equal(list[0].name, 'node.exe');
+      assert.equal(list[0].pid, process.pid);
+      assert.equal(list[0].memory, undefined);
+      done();
+    });
+  });
+
+  it('should return a list containing this process\'s memory if the flag is set', done => {
+    getProcessList(process.pid, (list) => {
+      assert.equal(list.length, 1);
+      assert.equal(list[0].name, 'node.exe');
+      assert.equal(list[0].pid, process.pid);
+      assert.equal(typeof list[0].memory, 'number');
+      done();
+    }, ProcessDataFlag.Memory);
+  });
+
+  it('should return a list containing this process\'s child processes', done => {
+    cps.push(child_process.spawn('cmd.exe'));
+    pollUntil(() => {
+      return new Promise((resolve) => {
+        getProcessList(process.pid, (list) => {
+          resolve(list.length === 2 && list[0].pid === process.pid && list[1].pid === cps[0].pid);
+        });
+      });
+    }, () => done(), 20, 500);
+  });
+});
+
+describe('getProcessCpuUsage', () => {
+
+  it('should get process cpu usage', (done) => {
+      getProcessCpuUsage([{ pid: process.pid, ppid: process.ppid, name: 'node.exe' }], (annotatedList) => {
+        assert.equal(annotatedList.length, 1);
+        assert.equal(annotatedList[0].name, 'node.exe');
+        assert.equal(annotatedList[0].pid, process.pid);
+        assert.equal(annotatedList[0].memory, undefined);
+        assert.equal(typeof annotatedList[0].cpu, 'number');
+        assert.equal(0 <= annotatedList[0].cpu && annotatedList[0].cpu <= 100, true);
+        done();
+    });
+  });
+
+  it('should handle multiple calls gracefully', function (done: MochaDone): void {
+    this.timeout(3000);
+
+    let counter = 0;
+    const callback = (list) => {
+      assert.notEqual(list.find(p => p.pid === process.pid), undefined);
+      if (++counter === 2) {
+        done();
+      }
+    };
+    getProcessCpuUsage([{ pid: process.pid, ppid: process.ppid, name: 'node.exe' }], callback);
+    getProcessCpuUsage([{ pid: process.pid, ppid: process.ppid, name: 'node.exe' }], callback);
   });
 });
 
