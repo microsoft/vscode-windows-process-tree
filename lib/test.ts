@@ -68,6 +68,19 @@ describe('getRawProcessList', () => {
       }, ProcessDataFlag.Memory);
     }, ProcessDataFlag.None);
   });
+
+  it('should return argument information only when the flag is set', (done) => {
+    // Arguments should be undefined when flag is not set
+    native.getProcessList((list) => {
+      assert.equal(list.every(p => p.arguments === undefined), true);
+
+      // Arguments should be a string when flag is set
+      native.getProcessList((list) => {
+        assert.equal(list.every(p => typeof p.arguments === 'string'), true);
+        done();
+      }, ProcessDataFlag.Arguments);
+    }, ProcessDataFlag.None);
+  });
 });
 
 describe('getProcessList', () => {
@@ -89,6 +102,7 @@ describe('getProcessList', () => {
       assert.equal(list[0].name, 'node.exe');
       assert.equal(list[0].pid, process.pid);
       assert.equal(list[0].memory, undefined);
+      assert.equal(list[0].arguments, undefined);
       done();
     });
   });
@@ -101,6 +115,19 @@ describe('getProcessList', () => {
       assert.equal(typeof list[0].memory, 'number');
       done();
     }, ProcessDataFlag.Memory);
+  });
+
+  it('should return argument information only if the flag is set', (done) => {
+    getProcessList(process.pid, (list) => {
+      assert.equal(list.length, 1);
+      assert.equal(list[0].name, 'node.exe');
+      assert.equal(list[0].pid, process.pid);
+      assert.equal(typeof list[0].arguments, 'string');
+      // Arguments is "<path to node> <path to mocha> lib/test.js"
+      assert.equal(list[0].arguments.indexOf('mocha') > 0, true);
+      assert.equal(list[0].arguments.indexOf('lib/test.js') > 0, true);
+      done();
+    }, ProcessDataFlag.Arguments);
   });
 
   it('should return a list containing this process\'s child processes', done => {
@@ -162,6 +189,7 @@ describe('getProcessTree', () => {
       assert.equal(tree.name, 'node.exe');
       assert.equal(tree.pid, process.pid);
       assert.equal(tree.memory, undefined);
+      assert.equal(tree.arguments, undefined);
       assert.equal(tree.children.length, 0);
       done();
     });
@@ -175,6 +203,16 @@ describe('getProcessTree', () => {
       assert.equal(tree.children.length, 0);
       done();
     }, ProcessDataFlag.Memory);
+  });
+
+  it('should return a tree containing this process\'s arguments if the flag is set', done => {
+    getProcessTree(process.pid, (tree) => {
+      assert.equal(tree.name, 'node.exe');
+      assert.equal(tree.pid, process.pid);
+      assert.equal(typeof tree.arguments, 'string');
+      assert.equal(tree.children.length, 0);
+      done();
+    }, ProcessDataFlag.Arguments);
   });
 
   it('should return a tree containing this process\'s child processes', done => {

@@ -42,6 +42,11 @@ void Worker::HandleOKCallback() {
               Nan::New<v8::Number>(process_info[i].memory));
     }
 
+    if (ARGUMENTS & *process_data_flags) {
+      Nan::Set(object, Nan::New<v8::String>("arguments").ToLocalChecked(),
+        Nan::New<v8::String>(process_info[i].arguments).ToLocalChecked());
+    }
+
     Nan::Set(result, i, Nan::New<v8::Value>(object));
   }
   v8::Local<v8::Value> argv[] = { result };

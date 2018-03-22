@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 #include "process.h"
+#include "process_arguments.h"
 
 #include <tlhelp32.h>
 #include <psapi.h>
@@ -25,6 +26,10 @@ void GetRawProcessList(ProcessInfo process_info[1024], uint32_t* process_count, 
 
         if (MEMORY & *process_data_flags) {
           GetProcessMemoryUsage(process_info, process_count);
+        }
+
+        if (ARGUMENTS & *process_data_flags) {
+          GetProcessCommandLineArguments(process_info, process_count);
         }
 
         strcpy(process_info[*process_count].name, process_entry.szExeFile);

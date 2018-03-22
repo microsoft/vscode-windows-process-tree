@@ -6,7 +6,8 @@
 declare module 'windows-process-tree' {
   export enum ProcessDataFlag {
     None = 0,
-    Memory = 1
+    Memory = 1,
+    Arguments = 2
   }
 
   export interface IProcessInfo {
@@ -14,6 +15,7 @@ declare module 'windows-process-tree' {
     ppid: number;
     name: string;
     memory?: number;
+    arguments?: string;
   }
 
   export interface IProcessCpuInfo extends IProcessInfo {
@@ -24,10 +26,9 @@ declare module 'windows-process-tree' {
     pid: number;
     name: string;
     memory?: number;
+    arguments?: string;
     children: IProcessTreeNode[];
   }
-
-
 
   /**
    * Returns a tree of processes with the rootPid process as the root.
