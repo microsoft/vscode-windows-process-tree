@@ -103,7 +103,7 @@ describe('getProcessList', () => {
     }, ProcessDataFlag.Memory);
   });
 
-  it('should return a tree containing this process\'s child processes', done => {
+  it('should return a list containing this process\'s child processes', done => {
     cps.push(child_process.spawn('cmd.exe'));
     pollUntil(() => {
       return new Promise((resolve) => {
