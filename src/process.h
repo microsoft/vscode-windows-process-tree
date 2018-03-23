@@ -21,11 +21,13 @@ struct ProcessInfo {
   DWORD pid;
   DWORD ppid;
   DWORD memory; // Reported in bytes
+  TCHAR commandLine[512];
 };
 
 enum ProcessDataFlags {
   NONE = 0,
-  MEMORY = 1
+  MEMORY = 1,
+  COMMANDLINE = 2
 };
 
 void GetRawProcessList(ProcessInfo process_info[1024], uint32_t* process_count, DWORD* flags);
