@@ -9,7 +9,7 @@ import { IProcessInfo, IProcessTreeNode, IProcessCpuInfo } from 'windows-process
 export enum ProcessDataFlag {
   None = 0,
   Memory = 1,
-  Arguments = 2
+  CommandLine = 2
 }
 
 interface  IRequest {
@@ -42,7 +42,7 @@ function buildProcessTree( rootPid: number, processList: IProcessInfo[]): IProce
     pid: rootProcess.pid,
     name: rootProcess.name,
     memory: rootProcess.memory,
-    arguments: rootProcess.arguments,
+    commandLine: rootProcess.commandLine,
     children: childIndexes.map(c => buildProcessTree(c.pid, processList))
   };
 }

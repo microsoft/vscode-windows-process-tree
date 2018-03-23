@@ -4,12 +4,12 @@
  *--------------------------------------------------------------------------------------------*/
 
 #include "process.h"
-#include "process_arguments.h"
+#include "process_commandline.h"
 #include <windows.h>
 #include <winternl.h>
 #include <psapi.h>
 
-bool GetProcessCommandLineArguments(ProcessInfo process_info[1024], uint32_t *process_count) {
+bool GetProcessCommandLine(ProcessInfo process_info[1024], uint32_t *process_count) {
   pfnNtQueryInformationProcess gNtQueryInformationProcess = (pfnNtQueryInformationProcess)GetProcAddress(
       GetModuleHandleA("ntdll.dll"), "NtQueryInformationProcess");
 
@@ -53,14 +53,14 @@ bool GetProcessCommandLineArguments(ProcessInfo process_info[1024], uint32_t *pr
           if (buffer) {
             if (ReadProcessMemory(hProcess, process_parameters.CommandLine.Buffer, buffer, process_parameters.CommandLine.Length, &bytes_read)) {
 
-              // Copy only as much as will fit in the arguments property
-              DWORD buffer_size = process_parameters.CommandLine.Length >= sizeof(process_info[*process_count].arguments)
-                                     ? sizeof(process_info[*process_count].arguments) - sizeof(TCHAR)
+              // Copy only as much as will fit in the commandLine property
+              DWORD buffer_size = process_parameters.CommandLine.Length >= sizeof(process_info[*process_count].commandLine)
+                                     ? sizeof(process_info[*process_count].commandLine) - sizeof(TCHAR)
                                      : process_parameters.CommandLine.Length;
 
               WideCharToMultiByte(CP_ACP, 0, buffer,
                                   (int)(buffer_size / sizeof(WCHAR)),
-                                  process_info[*process_count].arguments, sizeof(process_info[*process_count].arguments),
+                                  process_info[*process_count].commandLine, sizeof(process_info[*process_count].commandLine),
                                   NULL, NULL);
 
               CloseHandle(hProcess);
