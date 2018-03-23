@@ -14,7 +14,15 @@ declare module 'windows-process-tree' {
     pid: number;
     ppid: number;
     name: string;
+
+    /**
+     * The working set size of the process, in bytes.
+     */
     memory?: number;
+
+    /**
+     * The string returned is at most 512 chars, strings exceeding this length are truncated.
+     */
     commandLine?: string;
   }
 
@@ -32,24 +40,24 @@ declare module 'windows-process-tree' {
 
   /**
    * Returns a tree of processes with the rootPid process as the root.
-   * @param {number} rootPid - The pid of the process that will be the root of the tree.
-   * @param {(tree: IProcessTreeNode) => void} callback - The callback to use with the returned list of processes.
-   * @param {ProcessDataFlag} flags - The flags for what process data should be included.
+   * @param rootPid - The pid of the process that will be the root of the tree.
+   * @param callback - The callback to use with the returned list of processes.
+   * @param flags - The flags for what process data should be included.
    */
   export function getProcessTree(rootPid: number, callback: (tree: IProcessTreeNode) => void, flags?: ProcessDataFlag): void;
 
   /**
    * Returns a list of processes containing the rootPid process and all of its descendants.
-   * @param {number} rootPid - The pid of the process of interest.
-   * @param {(processList: IProcessInfo[]) => void} callback - The callback to use with the returned set of processes.
-   * @param {ProcessDataFlag} flags - The flags for what process data should be included.
+   * @param rootPid - The pid of the process of interest.
+   * @param callback - The callback to use with the returned set of processes.
+   * @param flags - The flags for what process data should be included.
    */
   export function getProcessList(rootPid: number, callback: (processList: IProcessInfo[]) => void, flags?: ProcessDataFlag): void;
 
   /**
    * Returns the list of processes annotated with cpu usage information.
-   * @param {processList: IProcessInfo[]} processList - The list of processes.
-   * @param {(processListWithCpu: IProcessCpuInfo[]) => void} callback - The callback to use with the returned list of processes.
+   * @param processList - The list of processes.
+   * @param callback - The callback to use with the returned list of processes.
    */
   export function getProcessCpuUsage(processList: IProcessInfo[], callback: (processListWithCpu: IProcessCpuInfo[]) => void);
 }
