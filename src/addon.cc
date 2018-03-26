@@ -85,7 +85,8 @@ void GetProcessCpuUsage(const Nan::FunctionCallbackInfo<v8::Value>& args) {
   }
 
   v8::Local<v8::Value> argv[] = { result };
-  callback->Call(1, argv);
+  Nan::AsyncResource resource("windows-process-tree:addon.GetProcessCpuUsage");
+  callback->Call(1, argv, &resource);
 }
 
 void Init(v8::Local<v8::Object> exports) {
