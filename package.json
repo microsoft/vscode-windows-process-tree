@@ -7,7 +7,6 @@
   "scripts": {
     "test": "mocha lib/test.js",
     "prepublish": "tsc",
-    "postinstall": "tsc",
     "watch": "tsc -w",
     "lint": "tslint lib/*.ts typings/*.ts *.ts"
   },
