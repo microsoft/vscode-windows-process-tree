@@ -1,5 +1,7 @@
 # windows-process-tree
 
+[![Build status](https://ci.appveyor.com/api/projects/status/ymp5m05kvcdtw6e7/branch/master?svg=true)](https://ci.appveyor.com/project/Tyriar/vscode-windows-process-tree/branch/master)
+
 Quickly fetch a process tree information for a particular process ID on Windows using Node.js.
 
 ## Usage
