@@ -59,5 +59,5 @@ declare module 'windows-process-tree' {
    * @param processList - The list of processes.
    * @param callback - The callback to use with the returned list of processes.
    */
-  export function getProcessCpuUsage(processList: IProcessInfo[], callback: (processListWithCpu: IProcessCpuInfo[]) => void);
+  export function getProcessCpuUsage(processList: IProcessInfo[], callback: (processListWithCpu: IProcessCpuInfo[]) => void): void;
 }
