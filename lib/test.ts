@@ -5,7 +5,7 @@
 
 import * as assert from 'assert';
 import * as child_process from 'child_process';
-import { getProcessTree, getProcessList, getProcessCpuUsage, ProcessDataFlag } from './index';
+import { getProcessTree, getProcessList, getProcessCpuUsage, ProcessDataFlag, buildProcessTree, filterProcessList } from './index';
 
 const native = require('../build/Release/windows_process_tree.node');
 
@@ -242,5 +242,34 @@ describe('getProcessTree', () => {
         });
       });
     }, () => done(), 20, 500);
+  });
+});
+
+describe('buildProcessTree', () => {
+  it('should enforce a maximum search depth', () => {
+    const tree = buildProcessTree(0, [
+      { pid: 0, ppid: 0, name: '0' }
+    ], 3);
+    assert.equal(tree.pid, 0);
+    assert.equal(tree.children.length, 1);
+    assert.equal(tree.children[0].pid, 0);
+    assert.equal(tree.children[0].children.length, 1);
+    assert.equal(tree.children[0].children[0].pid, 0);
+    assert.equal(tree.children[0].children[0].children.length, 1);
+    assert.equal(tree.children[0].children[0].children[0].pid, 0);
+    assert.equal(tree.children[0].children[0].children[0].children.length, 0);
+  });
+});
+
+describe('filterProcessList', () => {
+  it('should enforce a maximum search depth', () => {
+    const list = filterProcessList(0, [
+      { pid: 0, ppid: 0, name: '0' }
+    ], 3);
+    assert.equal(list.length, 4);
+    assert.equal(list[0].pid, 0);
+    assert.equal(list[1].pid, 0);
+    assert.equal(list[2].pid, 0);
+    assert.equal(list[3].pid, 0);
   });
 });
