@@ -4,13 +4,13 @@ Quickly fetch a process tree information for a particular process ID on Windows 
 
 ## Usage
 
-```js
-if (process.platform === 'win32') {
-  var child_process = require('child_process');
-  var windowsProcessTree = require('windows-process-tree');
+```ts
+import * as child_process from 'child_process';
+import { getProcessTree } from 'windows-process-tree';
 
+if (process.platform === 'win32') {
   child_process.spawn('cmd.exe');
-  windowsProcessTree(process.pid, (tree) => {
+  getProcessTree(process.pid, (tree) => {
     console.log(tree);
   });
   // { pid: 11168,
@@ -18,12 +18,14 @@ if (process.platform === 'win32') {
   //   children:
   //    [ { pid: 1472, name: 'cmd.exe', children:[] },
 
-  windowsProcessTree(0, (tree) => {
+  getProcessTree(0, (tree) => {
     console.log(tree);
   });
   // undefined
 }
 ```
+
+For the full API look at the [typings file](./typings/windows-process-tree.d.ts).
 
 ## Why a native node module?
 
