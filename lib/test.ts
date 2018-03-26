@@ -215,7 +215,7 @@ describe('getProcessTree', () => {
     }, ProcessDataFlag.CommandLine);
   });
 
-  it('should return a tree containing this process\'s child processes', done => {
+  it('should return a tree containing this process\'s child processes (simple)', done => {
     cps.push(child_process.spawn('cmd.exe'));
     pollUntil(() => {
       return new Promise((resolve) => {
@@ -226,7 +226,7 @@ describe('getProcessTree', () => {
     }, () => done(), 20, 500);
   });
 
-  it('should return a tree containing this process\'s child processes', done => {
+  it('should return a tree containing this process\'s child processes (complex)', done => {
     cps.push(child_process.spawn('powershell.exe'));
     cps.push(child_process.spawn('cmd.exe', ['/C', 'powershell.exe']));
     pollUntil(() => {
