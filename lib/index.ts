@@ -25,12 +25,15 @@ let requestInProgress = false;
 const processListRequestQueue: RequestQueue = [];
 const processTreeRequestQueue: RequestQueue = [];
 
+const MAX_FILTER_DEPTH = 10;
+
 /**
  * Filters a list of processes to rootPid and its descendents and creates a tree
  * @param rootPid The process to use as the root
  * @param processList The list of processes
+ * @param maxDepth The maximum depth to search
  */
-function buildProcessTree( rootPid: number, processList: IProcessInfo[]): IProcessTreeNode {
+export function buildProcessTree(rootPid: number, processList: IProcessInfo[], maxDepth: number): IProcessTreeNode {
   const rootIndex = processList.findIndex(v => v.pid === rootPid);
   if (rootIndex === -1) {
     return undefined;
@@ -43,7 +46,7 @@ function buildProcessTree( rootPid: number, processList: IProcessInfo[]): IProce
     name: rootProcess.name,
     memory: rootProcess.memory,
     commandLine: rootProcess.commandLine,
-    children: childIndexes.map(c => buildProcessTree(c.pid, processList))
+    children: maxDepth === 0 ? [] : childIndexes.map(c => buildProcessTree(c.pid, processList, maxDepth - 1))
   };
 }
 
@@ -51,23 +54,28 @@ function buildProcessTree( rootPid: number, processList: IProcessInfo[]): IProce
  * Filters processList to contain the process with rootPid and all of its descendants
  * @param rootPid The root pid
  * @param processList The list of all processes
+ * @param maxDepth The maximum depth to search
  */
-function filterProcessList(rootPid: number, processList: IProcessInfo[]): IProcessInfo[] {
+export function filterProcessList(rootPid: number, processList: IProcessInfo[], maxDepth: number): IProcessInfo[] {
   const rootIndex = processList.findIndex(v => v.pid === rootPid);
   if (rootIndex === -1) {
     return undefined;
   }
 
+  if (maxDepth === -1) {
+    return [];
+  }
+
   const rootProcess = processList[rootIndex];
   const childIndexes = processList.filter(v => v.ppid === rootPid);
-  return childIndexes.map(c => filterProcessList(c.pid, processList)).reduce((prev, current) => prev.concat(current), [rootProcess]);
+  return childIndexes.map(c => filterProcessList(c.pid, processList, maxDepth - 1)).reduce((prev, current) => prev.concat(current), [rootProcess]);
 }
 
 function getRawProcessList(
   pid: number,
   queue: RequestQueue,
   callback: (processList: IProcessInfo[] | IProcessTreeNode) => void,
-  filter: (pid: number, processList: IProcessInfo[]) => IProcessInfo[] | IProcessTreeNode,
+  filter: (pid: number, processList: IProcessInfo[], maxDepth: number) => IProcessInfo[] | IProcessTreeNode,
   flags?: ProcessDataFlag
 ): void {
   queue.push({
@@ -83,7 +91,7 @@ function getRawProcessList(
     requestInProgress = true;
     native.getProcessList((processList: IProcessInfo[]) => {
       queue.forEach(r => {
-        r.callback(filter(r.rootPid, processList));
+        r.callback(filter(r.rootPid, processList, MAX_FILTER_DEPTH));
       });
       queue.length = 0;
       requestInProgress = false;
