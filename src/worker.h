@@ -11,14 +11,13 @@
 
 class Worker : public Nan::AsyncWorker {
  public:
-  Worker(ProcessInfo* process_info, uint32_t* process_count, 
-      Nan::Callback* callback, DWORD* process_data_flags);
+  Worker(Nan::Callback* callback, DWORD* process_data_flags);
   ~Worker();
 
   void Execute();
   void HandleOKCallback();
  private:
-  ProcessInfo *process_info;
+  ProcessInfo* process_info;
   uint32_t* process_count;
   DWORD* process_data_flags;
 };

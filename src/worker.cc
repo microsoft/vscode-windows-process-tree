@@ -6,17 +6,18 @@
 #include "worker.h"
 
 Worker::Worker(
-    ProcessInfo* process_info,
-    uint32_t* process_count,
     Nan::Callback* callback,
     DWORD* process_data_flags) 
       : AsyncWorker(callback),
-        process_count(process_count),
-        process_info(process_info),
         process_data_flags(process_data_flags) {
+    process_info = new ProcessInfo[1024];
+    process_count = new uint32_t;
 }
 
 Worker::~Worker() {
+  delete[] process_info;
+  delete process_count;
+  delete process_data_flags;
 }
 
 void Worker::Execute() {
