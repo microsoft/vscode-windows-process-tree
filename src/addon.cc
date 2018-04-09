@@ -84,6 +84,8 @@ void GetProcessCpuUsage(const Nan::FunctionCallbackInfo<v8::Value>& args) {
 
   v8::Local<v8::Value> argv[] = { result };
   callback->Call(1, argv);
+
+  delete[] cpu_info;
 }
 
 void Init(v8::Local<v8::Object> exports) {
