@@ -9,9 +9,6 @@
 #include <cmath>
 
 void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& args) {
-  ProcessInfo process_info[1024];
-  uint32_t process_count;
-
   if (args.Length() < 2) {
     Nan::ThrowTypeError("GetProcessList expects two arguments.");
     return;
@@ -28,8 +25,9 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& args) {
   }
 
   Nan::Callback *callback = new Nan::Callback(v8::Local<v8::Function>::Cast(args[0]));
-  DWORD flags = (DWORD)args[1]->NumberValue();
-  Worker *worker = new Worker(process_info, &process_count, callback, &flags);
+  DWORD* flags = new DWORD;
+  *flags = (DWORD)args[1]->NumberValue();
+  Worker *worker = new Worker(callback, flags);
   Nan::AsyncQueueWorker(worker);
 }
 

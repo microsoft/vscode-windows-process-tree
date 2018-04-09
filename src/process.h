@@ -21,7 +21,7 @@ struct ProcessInfo {
   DWORD pid;
   DWORD ppid;
   DWORD memory; // Reported in bytes
-  TCHAR commandLine[512];
+  TCHAR commandLine[4096];
 };
 
 enum ProcessDataFlags {
