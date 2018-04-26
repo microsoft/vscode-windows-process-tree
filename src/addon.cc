@@ -27,7 +27,7 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& args) {
   Nan::Callback *callback = new Nan::Callback(v8::Local<v8::Function>::Cast(args[0]));
   DWORD* flags = new DWORD;
   *flags = (DWORD)args[1]->NumberValue();
-  Worker *worker = new Worker(callback, flags);
+  GetProcessesWorker *worker = new GetProcessesWorker(callback, flags);
   Nan::AsyncQueueWorker(worker);
 }
 
@@ -49,43 +49,9 @@ void GetProcessCpuUsage(const Nan::FunctionCallbackInfo<v8::Value>& args) {
 
   // Read the ProcessTreeNode JS object
   v8::Local<v8::Array> processes = v8::Local<v8::Array>::Cast(args[0]);
-  uint32_t count = processes->Length();
-  Cpu* cpu_info = new Cpu[count];
-
-  // Read pid from each array and populate data structure to calculate CPU, take first sample of counters
-  for (uint32_t i = 0; i < count; i++) {
-    v8::Local<v8::Object> process = processes->Get(Nan::New<v8::Integer>(i))->ToObject();
-    DWORD pid = (DWORD)(process->Get(Nan::New("pid").ToLocalChecked()))->NumberValue();
-    cpu_info[i].pid = pid;
-    GetCpuUsage(cpu_info, &i, true);
-  }
-
-  // Sleep for one second
-  Sleep(1000);
-
-  // Sample counters again and complete CPU usage calculation
-  for (uint32_t i = 0; i < count; i++) {
-    GetCpuUsage(cpu_info, &i, false);
-  }
-
   Nan::Callback *callback = new Nan::Callback(v8::Local<v8::Function>::Cast(args[1]));
-
-  v8::Local<v8::Array> result = Nan::New<v8::Array>(count);
-  for (uint32_t i = 0; i < count; i++) {
-    v8::Local<v8::Object> object = processes->Get(Nan::New<v8::Integer>(i))->ToObject();
-
-    if (!std::isnan(cpu_info[i].cpu)) {
-      Nan::Set(object, Nan::New<v8::String>("cpu").ToLocalChecked(),
-                Nan::New<v8::Number>(cpu_info[i].cpu));
-    }
-
-    Nan::Set(result, i, Nan::New<v8::Value>(object));
-  }
-
-  v8::Local<v8::Value> argv[] = { result };
-  callback->Call(1, argv);
-
-  delete[] cpu_info;
+  GetCPUWorker *worker = new GetCPUWorker(callback, processes);
+  Nan::AsyncQueueWorker(worker);
 }
 
 void Init(v8::Local<v8::Object> exports) {

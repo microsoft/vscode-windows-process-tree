@@ -9,10 +9,10 @@
 #include <nan.h>
 #include "process.h"
 
-class Worker : public Nan::AsyncWorker {
+class GetProcessesWorker : public Nan::AsyncWorker {
  public:
-  Worker(Nan::Callback* callback, DWORD* process_data_flags);
-  ~Worker();
+  GetProcessesWorker(Nan::Callback* callback, DWORD* process_data_flags);
+  ~GetProcessesWorker();
 
   void Execute();
   void HandleOKCallback();
@@ -20,6 +20,19 @@ class Worker : public Nan::AsyncWorker {
   ProcessInfo* process_info;
   uint32_t* process_count;
   DWORD* process_data_flags;
+
+};
+
+class GetCPUWorker : public Nan::AsyncWorker {
+ public:
+  GetCPUWorker(Nan::Callback* callback, v8::Local<v8::Array> &processes);
+  ~GetCPUWorker();
+
+  void Execute();
+  void HandleOKCallback();
+ private:
+  Cpu* cpu_info;
+  uint32_t process_count;
 };
 
 #endif  // SRC_WORKER_H_
