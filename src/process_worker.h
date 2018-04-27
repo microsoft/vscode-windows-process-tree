@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-#ifndef SRC_WORKER_H_
-#define SRC_WORKER_H_
+#ifndef SRC_PROCESS_WORKER_H
+#define SRC_PROCESS_WORKER_H
 
 #include <nan.h>
 #include "process.h"
@@ -23,16 +23,4 @@ class GetProcessesWorker : public Nan::AsyncWorker {
 
 };
 
-class GetCPUWorker : public Nan::AsyncWorker {
- public:
-  GetCPUWorker(Nan::Callback* callback, v8::Local<v8::Array> &processes);
-  ~GetCPUWorker();
-
-  void Execute();
-  void HandleOKCallback();
- private:
-  Cpu* cpu_info;
-  uint32_t process_count;
-};
-
-#endif  // SRC_WORKER_H_
+#endif  // SRC_PROCESS_WORKER_H

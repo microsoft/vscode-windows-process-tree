@@ -4,8 +4,9 @@
       "target_name": "windows_process_tree",
       "sources": [
         "src/addon.cc",
+        "src/cpu_worker.cc",
         "src/process.cc",
-        "src/worker.cc",
+        "src/process_worker.cc",
         "src/process_commandline.cc"
       ],
       "include_dirs": [

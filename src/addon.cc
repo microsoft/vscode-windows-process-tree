@@ -4,9 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 #include <nan.h>
-#include "process.h"
-#include "worker.h"
-#include <cmath>
+#include "cpu_worker.h"
+#include "process_worker.h"
 
 void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& args) {
   if (args.Length() < 2) {
