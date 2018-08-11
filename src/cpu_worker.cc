@@ -60,5 +60,6 @@ void GetCPUWorker::HandleOKCallback() {
   }
 
   v8::Local<v8::Value> argv[] = { result };
-  callback->Call(1, argv);
+  Nan::AsyncResource resource("windows-process-tree:addon.HandleOKCallback");
+  callback->Call(1, argv, &resource);
 }
