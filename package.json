@@ -1,6 +1,6 @@
 {
   "name": "windows-process-tree",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Fetch a Windows process tree fast",
   "main": "lib/index.js",
   "types": "typings/windows-process-tree.d.ts",
@@ -21,7 +21,7 @@
     "url": "https://github.com/Microsoft/vscode-windows-process-tree/issues"
   },
   "dependencies": {
-    "nan": "^2.6.2"
+    "nan": "^2.10.0"
   },
   "devDependencies": {
     "mocha": "^3.5.0",
