@@ -25,7 +25,7 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& args) {
 
   Nan::Callback *callback = new Nan::Callback(v8::Local<v8::Function>::Cast(args[0]));
   DWORD* flags = new DWORD;
-  *flags = (DWORD)args[1]->NumberValue(Nan::GetCurrentContext()).FromJust();
+  *flags = (DWORD)(Nan::To<int32_t>(args[1]).FromJust());
   GetProcessesWorker *worker = new GetProcessesWorker(callback, flags);
   Nan::AsyncQueueWorker(worker);
 }

@@ -17,9 +17,15 @@ GetCPUWorker::GetCPUWorker(
   cpu_info = new Cpu[process_count];
 
   for (uint32_t i = 0; i < process_count; i++) {
-    v8::Local<v8::Object> process = Nan::Get(processes, Nan::New<v8::Integer>(i)).ToLocalChecked()->ToObject(Nan::GetCurrentContext()).ToLocalChecked();
-    DWORD pid = (DWORD)(Nan::Get(process, Nan::New("pid").ToLocalChecked())).ToLocalChecked()->NumberValue(Nan::GetCurrentContext()).FromJust();
-    cpu_info[i].pid = pid;
+    v8::Local<v8::Value> process;
+    v8::MaybeLocal<v8::Value> maybe_process = Nan::Get(processes, Nan::New<v8::Integer>(i));
+    if (maybe_process.ToLocal(&process)) {
+      v8::Local<v8::Value> pid;
+      v8::MaybeLocal<v8::Value> maybe_pid = Nan::Get(Nan::To<v8::Object>(process).ToLocalChecked(), Nan::New("pid").ToLocalChecked());
+      if (maybe_pid.ToLocal(&pid)) {
+        cpu_info[i].pid = (DWORD)(Nan::To<int32_t>(pid).FromJust());
+      }
+    }
   }
 }
 
@@ -49,7 +55,12 @@ void GetCPUWorker::HandleOKCallback() {
   // Transfer results into actual result object
   v8::Local<v8::Array> result = Nan::New<v8::Array>(count);
   for (uint32_t i = 0; i < count; i++) {
-    v8::Local<v8::Object> object = Nan::Get(process_array, Nan::New<v8::Integer>(i)).ToLocalChecked()->ToObject(Nan::GetCurrentContext()).ToLocalChecked();
+    v8::Local<v8::Value> process;
+    v8::MaybeLocal<v8::Value> maybe_process = Nan::Get(process_array, Nan::New<v8::Integer>(i));
+    if (!maybe_process.ToLocal(&process))
+      continue;
+
+    v8::Local<v8::Object> object = Nan::To<v8::Object>(process).ToLocalChecked();
 
     if (!std::isnan(cpu_info[i].cpu)) {
       Nan::Set(object, Nan::New<v8::String>("cpu").ToLocalChecked(),
