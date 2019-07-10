@@ -25,7 +25,7 @@ void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& args) {
 
   Nan::Callback *callback = new Nan::Callback(v8::Local<v8::Function>::Cast(args[0]));
   DWORD* flags = new DWORD;
-  *flags = (DWORD)args[1]->NumberValue();
+  *flags = (DWORD)(Nan::To<int32_t>(args[1]).FromJust());
   GetProcessesWorker *worker = new GetProcessesWorker(callback, flags);
   Nan::AsyncQueueWorker(worker);
 }
@@ -54,10 +54,8 @@ void GetProcessCpuUsage(const Nan::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 void Init(v8::Local<v8::Object> exports) {
-  exports->Set(Nan::New("getProcessList").ToLocalChecked(),
-               Nan::New<v8::FunctionTemplate>(GetProcessList)->GetFunction());
-  exports->Set(Nan::New("getProcessCpuUsage").ToLocalChecked(),
-               Nan::New<v8::FunctionTemplate>(GetProcessCpuUsage)->GetFunction());
+  Nan::Export(exports, "getProcessList", GetProcessList);
+  Nan::Export(exports, "getProcessCpuUsage", GetProcessCpuUsage);
 }
 
 NODE_MODULE(hello, Init)
