@@ -5,8 +5,9 @@
 
 import * as assert from 'assert';
 import * as child_process from 'child_process';
+import * as path from 'path';
 import { getProcessTree, getProcessList, getProcessCpuUsage, ProcessDataFlag, buildProcessTree, filterProcessList } from './index';
-
+import { Worker, isMainThread } from 'worker_threads';
 const native = require('../build/Release/windows_process_tree.node');
 
 function pollUntil(makePromise: () => Promise<boolean>, cb: () => void, interval: number, timeout: number): void {
@@ -39,7 +40,7 @@ describe('getRawProcessList', () => {
 
   it('should return a list containing this process', (done) => {
     native.getProcessList((list) => {
-      assert.notEqual(list.find(p => p.pid === process.pid), undefined);
+      assert.notStrictEqual(list.find(p => p.pid === process.pid), undefined);
       done();
     }, 0);
   });
@@ -47,7 +48,7 @@ describe('getRawProcessList', () => {
   it('should handle multiple calls gracefully', (done) => {
     let counter = 0;
     const callback = (list) => {
-      assert.notEqual(list.find(p => p.pid === process.pid), undefined);
+      assert.notStrictEqual(list.find(p => p.pid === process.pid), undefined);
       if (++counter === 2) {
         done();
       }
@@ -59,11 +60,11 @@ describe('getRawProcessList', () => {
   it('should return memory information only when the flag is set', (done) => {
     // Memory should be undefined when flag is not set
     native.getProcessList((list) => {
-      assert.equal(list.every(p => p.memory === undefined), true);
+      assert.strictEqual(list.every(p => p.memory === undefined), true);
 
       // Memory should be a number when flag is set
       native.getProcessList((list) => {
-        assert.equal(list.some(p => p.memory > 0), true);
+        assert.strictEqual(list.some(p => p.memory > 0), true);
         done();
       }, ProcessDataFlag.Memory);
     }, ProcessDataFlag.None);
@@ -72,11 +73,11 @@ describe('getRawProcessList', () => {
   it('should return command line information only when the flag is set', (done) => {
     // commandLine should be undefined when flag is not set
     native.getProcessList((list) => {
-      assert.equal(list.every(p => p.commandLine === undefined), true);
+      assert.strictEqual(list.every(p => p.commandLine === undefined), true);
 
       // commandLine should be a string when flag is set
       native.getProcessList((list) => {
-        assert.equal(list.every(p => typeof p.commandLine === 'string'), true);
+        assert.strictEqual(list.every(p => typeof p.commandLine === 'string'), true);
         done();
       }, ProcessDataFlag.CommandLine);
     }, ProcessDataFlag.None);
@@ -98,34 +99,34 @@ describe('getProcessList', () => {
 
   it('should return a list containing this process', (done) => {
     getProcessList(process.pid, (list) => {
-      assert.equal(list.length, 1);
-      assert.equal(list[0].name, 'node.exe');
-      assert.equal(list[0].pid, process.pid);
-      assert.equal(list[0].memory, undefined);
-      assert.equal(list[0].commandLine, undefined);
+      assert.strictEqual(list.length, 1);
+      assert.strictEqual(list[0].name, 'node.exe');
+      assert.strictEqual(list[0].pid, process.pid);
+      assert.strictEqual(list[0].memory, undefined);
+      assert.strictEqual(list[0].commandLine, undefined);
       done();
     });
   });
 
   it('should return a list containing this process\'s memory if the flag is set', done => {
     getProcessList(process.pid, (list) => {
-      assert.equal(list.length, 1);
-      assert.equal(list[0].name, 'node.exe');
-      assert.equal(list[0].pid, process.pid);
-      assert.equal(typeof list[0].memory, 'number');
+      assert.strictEqual(list.length, 1);
+      assert.strictEqual(list[0].name, 'node.exe');
+      assert.strictEqual(list[0].pid, process.pid);
+      assert.strictEqual(typeof list[0].memory, 'number');
       done();
     }, ProcessDataFlag.Memory);
   });
 
   it('should return command line information only if the flag is set', (done) => {
     getProcessList(process.pid, (list) => {
-      assert.equal(list.length, 1);
-      assert.equal(list[0].name, 'node.exe');
-      assert.equal(list[0].pid, process.pid);
-      assert.equal(typeof list[0].commandLine, 'string');
+      assert.strictEqual(list.length, 1);
+      assert.strictEqual(list[0].name, 'node.exe');
+      assert.strictEqual(list[0].pid, process.pid);
+      assert.strictEqual(typeof list[0].commandLine, 'string');
       // CommandLine is "<path to node> <path to mocha> lib/test.js"
-      assert.equal(list[0].commandLine.indexOf('mocha') > 0, true);
-      assert.equal(list[0].commandLine.indexOf('lib/test.js') > 0, true);
+      assert.strictEqual(list[0].commandLine.indexOf('mocha') > 0, true);
+      assert.strictEqual(list[0].commandLine.indexOf('lib/test.js') > 0, true);
       done();
     }, ProcessDataFlag.CommandLine);
   });
@@ -146,22 +147,22 @@ describe('getProcessCpuUsage', () => {
 
   it('should get process cpu usage', (done) => {
       getProcessCpuUsage([{ pid: process.pid, ppid: process.ppid, name: 'node.exe' }], (annotatedList) => {
-        assert.equal(annotatedList.length, 1);
-        assert.equal(annotatedList[0].name, 'node.exe');
-        assert.equal(annotatedList[0].pid, process.pid);
-        assert.equal(annotatedList[0].memory, undefined);
-        assert.equal(typeof annotatedList[0].cpu, 'number');
-        assert.equal(0 <= annotatedList[0].cpu && annotatedList[0].cpu <= 100, true);
+        assert.strictEqual(annotatedList.length, 1);
+        assert.strictEqual(annotatedList[0].name, 'node.exe');
+        assert.strictEqual(annotatedList[0].pid, process.pid);
+        assert.strictEqual(annotatedList[0].memory, undefined);
+        assert.strictEqual(typeof annotatedList[0].cpu, 'number');
+        assert.strictEqual(0 <= annotatedList[0].cpu && annotatedList[0].cpu <= 100, true);
         done();
     });
   });
 
-  it('should handle multiple calls gracefully', function (done: MochaDone): void {
+  it('should handle multiple calls gracefully', function (done): void {
     this.timeout(3000);
 
     let counter = 0;
     const callback = (list) => {
-      assert.notEqual(list.find(p => p.pid === process.pid), undefined);
+      assert.notStrictEqual(list.find(p => p.pid === process.pid), undefined);
       if (++counter === 2) {
         done();
       }
@@ -186,31 +187,31 @@ describe('getProcessTree', () => {
 
   it('should return a tree containing this process', done => {
     getProcessTree(process.pid, (tree) => {
-      assert.equal(tree.name, 'node.exe');
-      assert.equal(tree.pid, process.pid);
-      assert.equal(tree.memory, undefined);
-      assert.equal(tree.commandLine, undefined);
-      assert.equal(tree.children.length, 0);
+      assert.strictEqual(tree.name, 'node.exe');
+      assert.strictEqual(tree.pid, process.pid);
+      assert.strictEqual(tree.memory, undefined);
+      assert.strictEqual(tree.commandLine, undefined);
+      assert.strictEqual(tree.children.length, 0);
       done();
     });
   });
 
   it('should return a tree containing this process\'s memory if the flag is set', done => {
     getProcessTree(process.pid, (tree) => {
-      assert.equal(tree.name, 'node.exe');
-      assert.equal(tree.pid, process.pid);
-      assert.notEqual(tree.memory, undefined);
-      assert.equal(tree.children.length, 0);
+      assert.strictEqual(tree.name, 'node.exe');
+      assert.strictEqual(tree.pid, process.pid);
+      assert.notStrictEqual(tree.memory, undefined);
+      assert.strictEqual(tree.children.length, 0);
       done();
     }, ProcessDataFlag.Memory);
   });
 
   it('should return a tree containing this process\'s command line if the flag is set', done => {
     getProcessTree(process.pid, (tree) => {
-      assert.equal(tree.name, 'node.exe');
-      assert.equal(tree.pid, process.pid);
-      assert.equal(typeof tree.commandLine, 'string');
-      assert.equal(tree.children.length, 0);
+      assert.strictEqual(tree.name, 'node.exe');
+      assert.strictEqual(tree.pid, process.pid);
+      assert.strictEqual(typeof tree.commandLine, 'string');
+      assert.strictEqual(tree.children.length, 0);
       done();
     }, ProcessDataFlag.CommandLine);
   });
@@ -250,14 +251,14 @@ describe('buildProcessTree', () => {
     const tree = buildProcessTree(0, [
       { pid: 0, ppid: 0, name: '0' }
     ], 3);
-    assert.equal(tree.pid, 0);
-    assert.equal(tree.children.length, 1);
-    assert.equal(tree.children[0].pid, 0);
-    assert.equal(tree.children[0].children.length, 1);
-    assert.equal(tree.children[0].children[0].pid, 0);
-    assert.equal(tree.children[0].children[0].children.length, 1);
-    assert.equal(tree.children[0].children[0].children[0].pid, 0);
-    assert.equal(tree.children[0].children[0].children[0].children.length, 0);
+    assert.strictEqual(tree.pid, 0);
+    assert.strictEqual(tree.children.length, 1);
+    assert.strictEqual(tree.children[0].pid, 0);
+    assert.strictEqual(tree.children[0].children.length, 1);
+    assert.strictEqual(tree.children[0].children[0].pid, 0);
+    assert.strictEqual(tree.children[0].children[0].children.length, 1);
+    assert.strictEqual(tree.children[0].children[0].children[0].pid, 0);
+    assert.strictEqual(tree.children[0].children[0].children[0].children.length, 0);
   });
 });
 
@@ -266,10 +267,76 @@ describe('filterProcessList', () => {
     const list = filterProcessList(0, [
       { pid: 0, ppid: 0, name: '0' }
     ], 3);
-    assert.equal(list.length, 4);
-    assert.equal(list[0].pid, 0);
-    assert.equal(list[1].pid, 0);
-    assert.equal(list[2].pid, 0);
-    assert.equal(list[3].pid, 0);
+    assert.strictEqual(list.length, 4);
+    assert.strictEqual(list[0].pid, 0);
+    assert.strictEqual(list[1].pid, 0);
+    assert.strictEqual(list[2].pid, 0);
+    assert.strictEqual(list[3].pid, 0);
+  });
+});
+
+describe('contextAware', () => {
+  it('should be context aware filter process list', async () => {
+    if (isMainThread) {
+      const workerPromise: Promise<boolean> = new Promise(resolve => {
+        const workerDir = path.join(__dirname, "./testWorker.js");
+        const worker = new Worker(workerDir);
+        worker.on('message', (message: string) => {
+          assert.strictEqual(message, 'done');
+        });
+        worker.on('error', () => {
+          resolve(false);
+        });
+        worker.on('exit', (code) => {
+          resolve(code === 0);
+        });
+      });
+      const list = filterProcessList(0, [
+        { pid: 0, ppid: 0, name: '0' }
+      ], 3);
+      assert.strictEqual(list.length, 4);
+      assert.strictEqual(list[0].pid, 0);
+      assert.strictEqual(list[1].pid, 0);
+      assert.strictEqual(list[2].pid, 0);
+      assert.strictEqual(list[3].pid, 0);
+      const workerResult = await workerPromise;
+      assert.strictEqual(workerResult, true);
+    }
+  });
+
+  it('should be context aware multiple workers', async () => {
+    if (isMainThread) {
+      const makeWorkerPromise = (): Promise<boolean> => {
+        return new Promise(resolve => {
+          const workerDir = path.join(__dirname, "./testWorker.js");
+          const worker = new Worker(workerDir);
+          worker.on('message', (message: string) => {
+            assert.strictEqual(message, 'done');
+          });
+          worker.on('error', () => {
+            resolve(false);
+          });
+          worker.on('exit', (code) => {
+            resolve(code === 0);
+          });
+        });
+      }
+      const workerPromises = [makeWorkerPromise(), makeWorkerPromise(), makeWorkerPromise()];
+      const processListPromise: Promise<boolean> = new Promise(resolve => {
+        getProcessList(process.pid, (list) => {
+          assert.strictEqual(list.length, 1);
+          assert.strictEqual(list[0].name, 'node.exe');
+          assert.strictEqual(list[0].pid, process.pid);
+          assert.strictEqual(list[0].memory, undefined);
+          assert.strictEqual(list[0].commandLine, undefined);
+          resolve(true);
+        });
+      });
+      const allPromises = [...workerPromises, processListPromise];
+      const workerResult = await Promise.all(allPromises).then(results => {
+        return results.every(result => result);
+      });
+      assert.strictEqual(workerResult, true);
+    }
   });
 });
