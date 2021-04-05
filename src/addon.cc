@@ -58,4 +58,4 @@ void Init(v8::Local<v8::Object> exports) {
   Nan::Export(exports, "getProcessCpuUsage", GetProcessCpuUsage);
 }
 
-NODE_MODULE(hello, Init)
+NAN_MODULE_WORKER_ENABLED(hello, Init)
