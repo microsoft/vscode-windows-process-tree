@@ -278,17 +278,17 @@ describe('filterProcessList', () => {
 describe('contextAware', () => {
   it('should be context aware filter process list', async () => {
     if (isMainThread) {
-      const workerPromise: Promise<boolean> = new Promise(resolve => {
+      const workerPromise: Promise<boolean> = new Promise((resolve, reject) => {
         const workerDir = path.join(__dirname, './testWorker.js');
         const worker = new Worker(workerDir);
         worker.on('message', (message: string) => {
           assert.strictEqual(message, 'done');
         });
         worker.on('error', () => {
-          resolve(false);
+          reject();
         });
         worker.on('exit', (code) => {
-          resolve(code === 0);
+          if (code === 0) resolve(true); else reject();
         });
       });
       const processListPromise: Promise<boolean> = new Promise(resolve => {
@@ -303,6 +303,8 @@ describe('contextAware', () => {
       });
       const combinedResult = await Promise.all([workerPromise, processListPromise]).then(results => {
         return results.every(result => result);
+      }, () => {
+        return false;
       });
       assert.strictEqual(combinedResult, true);
     }
@@ -311,22 +313,22 @@ describe('contextAware', () => {
   it('should be context aware multiple workers', async () => {
     if (isMainThread) {
       const makeWorkerPromise = (): Promise<boolean> => {
-        return new Promise(resolve => {
+        return new Promise((resolve, reject) => {
           const workerDir = path.join(__dirname, './testWorker.js');
           const worker = new Worker(workerDir);
           worker.on('message', (message: string) => {
             assert.strictEqual(message, 'done');
           });
           worker.on('error', () => {
-            resolve(false);
+            reject();
           });
           worker.on('exit', (code) => {
-            resolve(code === 0);
+            if (code === 0) resolve(true); else reject();
           });
         });
       };
       const workerPromises = [];
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < 50; i++) {
         workerPromises.push(makeWorkerPromise());
       }
       const processListPromise: Promise<boolean> = new Promise(resolve => {
@@ -342,6 +344,8 @@ describe('contextAware', () => {
       const allPromises = [...workerPromises, processListPromise];
       const workerResult = await Promise.all(allPromises).then(results => {
         return results.every(result => result);
+      }, () => {
+        return false;
       });
       assert.strictEqual(workerResult, true);
     }
