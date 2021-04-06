@@ -291,16 +291,20 @@ describe('contextAware', () => {
           resolve(code === 0);
         });
       });
-      const list = filterProcessList(0, [
-        { pid: 0, ppid: 0, name: '0' }
-      ], 3);
-      assert.strictEqual(list.length, 4);
-      assert.strictEqual(list[0].pid, 0);
-      assert.strictEqual(list[1].pid, 0);
-      assert.strictEqual(list[2].pid, 0);
-      assert.strictEqual(list[3].pid, 0);
-      const workerResult = await workerPromise;
-      assert.strictEqual(workerResult, true);
+      const processListPromise: Promise<boolean> = new Promise(resolve => {
+        getProcessList(process.pid, (list) => {
+          assert.strictEqual(list.length, 1);
+          assert.strictEqual(list[0].name, 'node.exe');
+          assert.strictEqual(list[0].pid, process.pid);
+          assert.strictEqual(list[0].memory, undefined);
+          assert.strictEqual(list[0].commandLine, undefined);
+          resolve(true);
+        });
+      });
+      const combinedResult = await Promise.all([workerPromise, processListPromise]).then(results => {
+        return results.every(result => result);
+      });
+      assert.strictEqual(combinedResult, true);
     }
   });
 
@@ -321,7 +325,10 @@ describe('contextAware', () => {
           });
         });
       }
-      const workerPromises = [makeWorkerPromise(), makeWorkerPromise(), makeWorkerPromise()];
+      const workerPromises = [];
+      for (let i = 0; i < 100; i++) {
+        workerPromises.push(makeWorkerPromise());
+      }
       const processListPromise: Promise<boolean> = new Promise(resolve => {
         getProcessList(process.pid, (list) => {
           assert.strictEqual(list.length, 1);

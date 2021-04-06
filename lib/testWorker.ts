@@ -1,15 +1,25 @@
 import * as assert from 'assert';
 import { isMainThread, parentPort } from 'worker_threads';
-import { filterProcessList } from './index';
+import { getProcessList, filterProcessList } from './index';
 
 if (!isMainThread) {
-  const list = filterProcessList(0, [
-    { pid: 0, ppid: 0, name: '0' }
-  ], 3);
-  assert.strictEqual(list.length, 4);
-  assert.strictEqual(list[0].pid, 0);
-  assert.strictEqual(list[1].pid, 0);
-  assert.strictEqual(list[2].pid, 0);
-  assert.strictEqual(list[3].pid, 0);
-  parentPort.postMessage('done');
+  new Promise(resolve => {
+    getProcessList(process.pid, (list) => {
+      assert.strictEqual(list.length, 1);
+      assert.strictEqual(list[0].name, 'node.exe');
+      assert.strictEqual(list[0].pid, process.pid);
+      assert.strictEqual(list[0].memory, undefined);
+      assert.strictEqual(list[0].commandLine, undefined);
+      const filtered = filterProcessList(process.pid, list, 1);
+      assert.strictEqual(filtered.length, 1);
+      assert.strictEqual(filtered[0].name, 'node.exe');
+      assert.strictEqual(filtered[0].pid, process.pid);
+      assert.strictEqual(filtered[0].memory, undefined);
+      assert.strictEqual(filtered[0].commandLine, undefined);
+      resolve(true);
+    });
+  }).then((res) => {
+    assert.strictEqual(res, true);
+    parentPort.postMessage('done');
+  });
 }
