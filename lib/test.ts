@@ -157,7 +157,7 @@ describe('getProcessCpuUsage', () => {
     });
   });
 
-  it('should handle multiple calls gracefully', function (done): void {
+  it('should handle multiple calls gracefully', function (done: MochaDone): void {
     this.timeout(3000);
 
     let counter = 0;
@@ -279,7 +279,7 @@ describe('contextAware', () => {
   it('should be context aware filter process list', async () => {
     if (isMainThread) {
       const workerPromise: Promise<boolean> = new Promise(resolve => {
-        const workerDir = path.join(__dirname, "./testWorker.js");
+        const workerDir = path.join(__dirname, './testWorker.js');
         const worker = new Worker(workerDir);
         worker.on('message', (message: string) => {
           assert.strictEqual(message, 'done');
@@ -312,7 +312,7 @@ describe('contextAware', () => {
     if (isMainThread) {
       const makeWorkerPromise = (): Promise<boolean> => {
         return new Promise(resolve => {
-          const workerDir = path.join(__dirname, "./testWorker.js");
+          const workerDir = path.join(__dirname, './testWorker.js');
           const worker = new Worker(workerDir);
           worker.on('message', (message: string) => {
             assert.strictEqual(message, 'done');
@@ -324,7 +324,7 @@ describe('contextAware', () => {
             resolve(code === 0);
           });
         });
-      }
+      };
       const workerPromises = [];
       for (let i = 0; i < 100; i++) {
         workerPromises.push(makeWorkerPromise());

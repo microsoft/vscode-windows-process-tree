@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "types": "typings/windows-process-tree.d.ts",
   "scripts": {
-    "test": "mocha lib/test.js --timeout 3000",
+    "test": "mocha lib/test.js --timeout 10000",
     "prepublish": "tsc",
     "compile": "tsc",
     "watch": "tsc -w",
