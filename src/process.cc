@@ -55,6 +55,8 @@ void GetProcessMemoryUsage(ProcessInfo process_info[1024], uint32_t* process_cou
   if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc))) {
     process_info[*process_count].memory = (DWORD)pmc.WorkingSetSize;
   }
+
+  CloseHandle(hProcess);
 }
 
 // Per documentation, it is not recommended to add or subtract values from the FILETIME
