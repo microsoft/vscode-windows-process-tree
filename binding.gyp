@@ -12,7 +12,20 @@
       "include_dirs": [
         "<!(node -e \"require('nan')\")"
       ],
-      "libraries": [ 'psapi.lib' ]
+      "libraries": [ 'psapi.lib' ],
+      'msvs_settings': {
+        'VCCLCompilerTool': {
+          'AdditionalOptions': [
+            '/Qspectre',
+            '/guard:cf'
+          ]
+        },
+        'VCLinkerTool': {
+          'AdditionalOptions': [
+            '/guard:cf'
+          ]
+        }
+      }
     }
   ]
 }
