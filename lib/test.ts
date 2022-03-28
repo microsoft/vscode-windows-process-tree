@@ -295,6 +295,7 @@ describe('contextAware', () => {
       });
       const processListPromise: Promise<boolean> = new Promise(resolve => {
         getProcessList(process.pid, (list) => {
+          assert.notStrictEqual(list, undefined);
           assert.strictEqual(list.length >= 1, true);
           assert.strictEqual(list[0].name, 'node.exe');
           assert.strictEqual(list[0].pid, process.pid);
@@ -335,6 +336,7 @@ describe('contextAware', () => {
       }
       const processListPromise: Promise<boolean> = new Promise(resolve => {
         getProcessList(process.pid, (list) => {
+          assert.notStrictEqual(list, undefined);
           assert.strictEqual(list.length >= 1, true);
           assert.strictEqual(list[0].name, 'node.exe');
           assert.strictEqual(list[0].pid, process.pid);
