@@ -75,7 +75,7 @@ function getRawProcessList(
   pid: number,
   queue: RequestQueue,
   callback: (processList: IProcessInfo[] | IProcessTreeNode) => void,
-  filter: (pid: number, processList: IProcessInfo[], maxDepth: number) => IProcessInfo[] | IProcessTreeNode,
+  filter: (pid: number, processList: IProcessInfo[], maxDepth: number) => IProcessInfo[] | IProcessTreeNode | undefined,
   flags?: ProcessDataFlag
 ): void {
   queue.push({

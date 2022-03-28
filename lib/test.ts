@@ -251,6 +251,7 @@ describe('buildProcessTree', () => {
     const tree = buildProcessTree(0, [
       { pid: 0, ppid: 0, name: '0' }
     ], 3);
+    assert.notStrictEqual(tree, undefined);
     assert.strictEqual(tree.pid, 0);
     assert.strictEqual(tree.children.length, 1);
     assert.strictEqual(tree.children[0].pid, 0);
@@ -267,6 +268,7 @@ describe('filterProcessList', () => {
     const list = filterProcessList(0, [
       { pid: 0, ppid: 0, name: '0' }
     ], 3);
+    assert.notStrictEqual(list, undefined);
     assert.strictEqual(list.length, 4);
     assert.strictEqual(list[0].pid, 0);
     assert.strictEqual(list[1].pid, 0);
