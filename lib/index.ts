@@ -33,7 +33,7 @@ const MAX_FILTER_DEPTH = 10;
  * @param processList The list of processes
  * @param maxDepth The maximum depth to search
  */
-export function buildProcessTree(rootPid: number, processList: IProcessInfo[], maxDepth: number): IProcessTreeNode {
+export function buildProcessTree(rootPid: number, processList: IProcessInfo[], maxDepth: number): IProcessTreeNode | undefined {
   const rootIndex = processList.findIndex(v => v.pid === rootPid);
   if (rootIndex === -1) {
     return undefined;
@@ -56,7 +56,7 @@ export function buildProcessTree(rootPid: number, processList: IProcessInfo[], m
  * @param processList The list of all processes
  * @param maxDepth The maximum depth to search
  */
-export function filterProcessList(rootPid: number, processList: IProcessInfo[], maxDepth: number): IProcessInfo[] {
+export function filterProcessList(rootPid: number, processList: IProcessInfo[], maxDepth: number): IProcessInfo[] | undefined {
   const rootIndex = processList.findIndex(v => v.pid === rootPid);
   if (rootIndex === -1) {
     return undefined;
