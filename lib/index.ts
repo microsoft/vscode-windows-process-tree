@@ -89,7 +89,7 @@ function getRawProcessList(
   // once.
   if (!requestInProgress) {
     requestInProgress = true;
-    native.getProcessList((processList: IProcessInfo[]) => {
+    native.getProcessList((processList: IProcessInfo[] | undefined) => {
       queue.forEach(r => {
         r.callback(filter(r.rootPid, processList, MAX_FILTER_DEPTH));
       });
@@ -105,7 +105,7 @@ function getRawProcessList(
  * @param callback The callback to use with the returned set of processes
  * @param flags The flags for what process data should be included
  */
-export function getProcessList(rootPid: number, callback: (processList: IProcessInfo[]) => void, flags?: ProcessDataFlag): void {
+export function getProcessList(rootPid: number, callback: (processList: IProcessInfo[] | undefined) => void, flags?: ProcessDataFlag): void {
   getRawProcessList(rootPid, processListRequestQueue, callback, filterProcessList, flags);
 }
 
