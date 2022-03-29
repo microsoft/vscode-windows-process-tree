@@ -125,8 +125,8 @@ describe('getProcessList', () => {
       assert.strictEqual(list![0].pid, process.pid);
       assert.strictEqual(typeof list![0].commandLine, 'string');
       // CommandLine is "<path to node> <path to mocha> lib/test.js"
-      assert.strictEqual(list![0].commandLine.indexOf('mocha') > 0, true);
-      assert.strictEqual(list![0].commandLine.indexOf('lib/test.js') > 0, true);
+      assert.strictEqual(list![0].commandLine!.indexOf('mocha') > 0, true);
+      assert.strictEqual(list![0].commandLine!.indexOf('lib/test.js') > 0, true);
       done();
     }, ProcessDataFlag.CommandLine);
   });
@@ -152,7 +152,7 @@ describe('getProcessCpuUsage', () => {
         assert.strictEqual(annotatedList![0].pid, process.pid);
         assert.strictEqual(annotatedList![0].memory, undefined);
         assert.strictEqual(typeof annotatedList![0].cpu, 'number');
-        assert.strictEqual(0 <= annotatedList![0].cpu && annotatedList![0].cpu <= 100, true);
+        assert.strictEqual(0 <= annotatedList![0].cpu! && annotatedList![0].cpu! <= 100, true);
         done();
     });
   });
@@ -221,7 +221,7 @@ describe('getProcessTree', () => {
     pollUntil(() => {
       return new Promise((resolve) => {
         getProcessTree(process.pid, (tree) => {
-          resolve(tree.children.length === 1);
+          resolve(tree!.children.length === 1);
         });
       });
     }, () => done(), 20, 500);
@@ -327,7 +327,7 @@ describe('contextAware', () => {
           });
         });
       };
-      const workerPromises = [];
+      const workerPromises: Promise<boolean>[] = [];
       for (let i = 0; i < 50; i++) {
         workerPromises.push(makeWorkerPromise());
       }
