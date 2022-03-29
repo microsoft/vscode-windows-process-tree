@@ -15,8 +15,8 @@ if (!isMainThread) {
     });
   }).then((res) => {
     assert.strictEqual(res, true);
-    parentPort.postMessage('done');
+    parentPort?.postMessage('done');
   }, () => {
-    parentPort.postMessage('fail');
+    parentPort?.postMessage('fail');
   });
 }
