@@ -40,7 +40,7 @@ describe('getRawProcessList', () => {
 
   it('should return a list containing this process', (done) => {
     native.getProcessList((list) => {
-      assert.notStrictEqual(list.find(p => p.pid === process.pid), undefined);
+      assert.notStrictEqual(list?.find(p => p.pid === process.pid), undefined);
       done();
     }, 0);
   });
@@ -48,7 +48,7 @@ describe('getRawProcessList', () => {
   it('should handle multiple calls gracefully', (done) => {
     let counter = 0;
     const callback = (list) => {
-      assert.notStrictEqual(list.find(p => p.pid === process.pid), undefined);
+      assert.notStrictEqual(list?.find(p => p.pid === process.pid), undefined);
       if (++counter === 2) {
         done();
       }
@@ -60,11 +60,11 @@ describe('getRawProcessList', () => {
   it('should return memory information only when the flag is set', (done) => {
     // Memory should be undefined when flag is not set
     native.getProcessList((list) => {
-      assert.strictEqual(list.every(p => p.memory === undefined), true);
+      assert.strictEqual(list?.every(p => p.memory === undefined), true);
 
       // Memory should be a number when flag is set
       native.getProcessList((list) => {
-        assert.strictEqual(list.some(p => p.memory > 0), true);
+        assert.strictEqual(list?.some(p => p.memory > 0), true);
         done();
       }, ProcessDataFlag.Memory);
     }, ProcessDataFlag.None);
@@ -73,11 +73,11 @@ describe('getRawProcessList', () => {
   it('should return command line information only when the flag is set', (done) => {
     // commandLine should be undefined when flag is not set
     native.getProcessList((list) => {
-      assert.strictEqual(list.every(p => p.commandLine === undefined), true);
+      assert.strictEqual(list?.every(p => p.commandLine === undefined), true);
 
       // commandLine should be a string when flag is set
       native.getProcessList((list) => {
-        assert.strictEqual(list.every(p => typeof p.commandLine === 'string'), true);
+        assert.strictEqual(list?.every(p => typeof p.commandLine === 'string'), true);
         done();
       }, ProcessDataFlag.CommandLine);
     }, ProcessDataFlag.None);
@@ -99,34 +99,34 @@ describe('getProcessList', () => {
 
   it('should return a list containing this process', (done) => {
     getProcessList(process.pid, (list) => {
-      assert.strictEqual(list.length, 1);
-      assert.strictEqual(list[0].name, 'node.exe');
-      assert.strictEqual(list[0].pid, process.pid);
-      assert.strictEqual(list[0].memory, undefined);
-      assert.strictEqual(list[0].commandLine, undefined);
+      assert.strictEqual(list?.length, 1);
+      assert.strictEqual(list![0].name, 'node.exe');
+      assert.strictEqual(list![0].pid, process.pid);
+      assert.strictEqual(list![0].memory, undefined);
+      assert.strictEqual(list![0].commandLine, undefined);
       done();
     });
   });
 
   it('should return a list containing this process\'s memory if the flag is set', done => {
     getProcessList(process.pid, (list) => {
-      assert.strictEqual(list.length, 1);
-      assert.strictEqual(list[0].name, 'node.exe');
-      assert.strictEqual(list[0].pid, process.pid);
-      assert.strictEqual(typeof list[0].memory, 'number');
+      assert.strictEqual(list?.length, 1);
+      assert.strictEqual(list![0].name, 'node.exe');
+      assert.strictEqual(list![0].pid, process.pid);
+      assert.strictEqual(typeof list![0].memory, 'number');
       done();
     }, ProcessDataFlag.Memory);
   });
 
   it('should return command line information only if the flag is set', (done) => {
     getProcessList(process.pid, (list) => {
-      assert.strictEqual(list.length, 1);
-      assert.strictEqual(list[0].name, 'node.exe');
-      assert.strictEqual(list[0].pid, process.pid);
-      assert.strictEqual(typeof list[0].commandLine, 'string');
+      assert.strictEqual(list?.length, 1);
+      assert.strictEqual(list![0].name, 'node.exe');
+      assert.strictEqual(list![0].pid, process.pid);
+      assert.strictEqual(typeof list![0].commandLine, 'string');
       // CommandLine is "<path to node> <path to mocha> lib/test.js"
-      assert.strictEqual(list[0].commandLine.indexOf('mocha') > 0, true);
-      assert.strictEqual(list[0].commandLine.indexOf('lib/test.js') > 0, true);
+      assert.strictEqual(list![0].commandLine.indexOf('mocha') > 0, true);
+      assert.strictEqual(list![0].commandLine.indexOf('lib/test.js') > 0, true);
       done();
     }, ProcessDataFlag.CommandLine);
   });
@@ -136,7 +136,7 @@ describe('getProcessList', () => {
     pollUntil(() => {
       return new Promise((resolve) => {
         getProcessList(process.pid, (list) => {
-          resolve(list.length === 2 && list[0].pid === process.pid && list[1].pid === cps[0].pid);
+          resolve(list?.length === 2 && list![0].pid === process.pid && list[1].pid === cps[0].pid);
         });
       });
     }, () => done(), 20, 500);
@@ -148,11 +148,11 @@ describe('getProcessCpuUsage', () => {
   it('should get process cpu usage', (done) => {
       getProcessCpuUsage([{ pid: process.pid, ppid: process.ppid, name: 'node.exe' }], (annotatedList) => {
         assert.strictEqual(annotatedList.length, 1);
-        assert.strictEqual(annotatedList[0].name, 'node.exe');
-        assert.strictEqual(annotatedList[0].pid, process.pid);
-        assert.strictEqual(annotatedList[0].memory, undefined);
-        assert.strictEqual(typeof annotatedList[0].cpu, 'number');
-        assert.strictEqual(0 <= annotatedList[0].cpu && annotatedList[0].cpu <= 100, true);
+        assert.strictEqual(annotatedList![0].name, 'node.exe');
+        assert.strictEqual(annotatedList![0].pid, process.pid);
+        assert.strictEqual(annotatedList![0].memory, undefined);
+        assert.strictEqual(typeof annotatedList![0].cpu, 'number');
+        assert.strictEqual(0 <= annotatedList![0].cpu && annotatedList![0].cpu <= 100, true);
         done();
     });
   });
@@ -162,7 +162,7 @@ describe('getProcessCpuUsage', () => {
 
     let counter = 0;
     const callback = (list) => {
-      assert.notStrictEqual(list.find(p => p.pid === process.pid), undefined);
+      assert.notStrictEqual(list?.find(p => p.pid === process.pid), undefined);
       if (++counter === 2) {
         done();
       }
@@ -187,31 +187,31 @@ describe('getProcessTree', () => {
 
   it('should return a tree containing this process', done => {
     getProcessTree(process.pid, (tree) => {
-      assert.strictEqual(tree.name, 'node.exe');
-      assert.strictEqual(tree.pid, process.pid);
-      assert.strictEqual(tree.memory, undefined);
-      assert.strictEqual(tree.commandLine, undefined);
-      assert.strictEqual(tree.children.length, 0);
+      assert.strictEqual(tree!.name, 'node.exe');
+      assert.strictEqual(tree!.pid, process.pid);
+      assert.strictEqual(tree!.memory, undefined);
+      assert.strictEqual(tree!.commandLine, undefined);
+      assert.strictEqual(tree!.children.length, 0);
       done();
     });
   });
 
   it('should return a tree containing this process\'s memory if the flag is set', done => {
     getProcessTree(process.pid, (tree) => {
-      assert.strictEqual(tree.name, 'node.exe');
-      assert.strictEqual(tree.pid, process.pid);
-      assert.notStrictEqual(tree.memory, undefined);
-      assert.strictEqual(tree.children.length, 0);
+      assert.strictEqual(tree!.name, 'node.exe');
+      assert.strictEqual(tree!.pid, process.pid);
+      assert.notStrictEqual(tree!.memory, undefined);
+      assert.strictEqual(tree!.children.length, 0);
       done();
     }, ProcessDataFlag.Memory);
   });
 
   it('should return a tree containing this process\'s command line if the flag is set', done => {
     getProcessTree(process.pid, (tree) => {
-      assert.strictEqual(tree.name, 'node.exe');
-      assert.strictEqual(tree.pid, process.pid);
-      assert.strictEqual(typeof tree.commandLine, 'string');
-      assert.strictEqual(tree.children.length, 0);
+      assert.strictEqual(tree!.name, 'node.exe');
+      assert.strictEqual(tree!.pid, process.pid);
+      assert.strictEqual(typeof tree!.commandLine, 'string');
+      assert.strictEqual(tree!.children.length, 0);
       done();
     }, ProcessDataFlag.CommandLine);
   });
@@ -233,13 +233,13 @@ describe('getProcessTree', () => {
     pollUntil(() => {
       return new Promise((resolve) => {
         getProcessTree(process.pid, (tree) => {
-          resolve(tree.children.length === 2 &&
-            tree.children[0].name === 'powershell.exe' &&
-            tree.children[0].children.length === 0 &&
-            tree.children[1].name === 'cmd.exe' &&
-            tree.children[1].children &&
-            tree.children[1].children.length === 1 &&
-            tree.children[1].children[0].name === 'powershell.exe');
+          resolve(tree!.children.length === 2 &&
+            tree!.children[0].name === 'powershell.exe' &&
+            tree!.children[0].children.length === 0 &&
+            tree!.children[1].name === 'cmd.exe' &&
+            tree!.children[1].children &&
+            tree!.children[1].children.length === 1 &&
+            tree!.children[1].children[0].name === 'powershell.exe');
         });
       });
     }, () => done(), 20, 500);
@@ -251,14 +251,14 @@ describe('buildProcessTree', () => {
     const tree = buildProcessTree(0, [
       { pid: 0, ppid: 0, name: '0' }
     ], 3);
-    assert.strictEqual(tree.pid, 0);
-    assert.strictEqual(tree.children.length, 1);
-    assert.strictEqual(tree.children[0].pid, 0);
-    assert.strictEqual(tree.children[0].children.length, 1);
-    assert.strictEqual(tree.children[0].children[0].pid, 0);
-    assert.strictEqual(tree.children[0].children[0].children.length, 1);
-    assert.strictEqual(tree.children[0].children[0].children[0].pid, 0);
-    assert.strictEqual(tree.children[0].children[0].children[0].children.length, 0);
+    assert.strictEqual(tree!.pid, 0);
+    assert.strictEqual(tree!.children.length, 1);
+    assert.strictEqual(tree!.children[0].pid, 0);
+    assert.strictEqual(tree!.children[0].children.length, 1);
+    assert.strictEqual(tree!.children[0].children[0].pid, 0);
+    assert.strictEqual(tree!.children[0].children[0].children.length, 1);
+    assert.strictEqual(tree!.children[0].children[0].children[0].pid, 0);
+    assert.strictEqual(tree!.children[0].children[0].children[0].children.length, 0);
   });
 });
 
@@ -267,11 +267,11 @@ describe('filterProcessList', () => {
     const list = filterProcessList(0, [
       { pid: 0, ppid: 0, name: '0' }
     ], 3);
-    assert.strictEqual(list.length, 4);
-    assert.strictEqual(list[0].pid, 0);
-    assert.strictEqual(list[1].pid, 0);
-    assert.strictEqual(list[2].pid, 0);
-    assert.strictEqual(list[3].pid, 0);
+    assert.strictEqual(list?.length, 4);
+    assert.strictEqual(list![0].pid, 0);
+    assert.strictEqual(list![1].pid, 0);
+    assert.strictEqual(list![2].pid, 0);
+    assert.strictEqual(list![3].pid, 0);
   });
 });
 
@@ -293,11 +293,11 @@ describe('contextAware', () => {
       });
       const processListPromise: Promise<boolean> = new Promise(resolve => {
         getProcessList(process.pid, (list) => {
-          assert.strictEqual(list.length >= 1, true);
-          assert.strictEqual(list[0].name, 'node.exe');
-          assert.strictEqual(list[0].pid, process.pid);
-          assert.strictEqual(list[0].memory, undefined);
-          assert.strictEqual(list[0].commandLine, undefined);
+          assert.strictEqual(list!.length >= 1, true);
+          assert.strictEqual(list![0].name, 'node.exe');
+          assert.strictEqual(list![0].pid, process.pid);
+          assert.strictEqual(list![0].memory, undefined);
+          assert.strictEqual(list![0].commandLine, undefined);
           resolve(true);
         });
       });
@@ -333,11 +333,11 @@ describe('contextAware', () => {
       }
       const processListPromise: Promise<boolean> = new Promise(resolve => {
         getProcessList(process.pid, (list) => {
-          assert.strictEqual(list.length >= 1, true);
-          assert.strictEqual(list[0].name, 'node.exe');
-          assert.strictEqual(list[0].pid, process.pid);
-          assert.strictEqual(list[0].memory, undefined);
-          assert.strictEqual(list[0].commandLine, undefined);
+          assert.strictEqual(list!.length >= 1, true);
+          assert.strictEqual(list![0].name, 'node.exe');
+          assert.strictEqual(list![0].pid, process.pid);
+          assert.strictEqual(list![0].memory, undefined);
+          assert.strictEqual(list![0].commandLine, undefined);
           resolve(true);
         });
       });
