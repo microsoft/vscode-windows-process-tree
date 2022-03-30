@@ -13,7 +13,7 @@ export enum ProcessDataFlag {
 }
 
 interface  IRequest {
-  callback: (processes: IProcessTreeNode | IProcessInfo[]) => void;
+  callback: (processes: IProcessTreeNode | IProcessInfo[] | undefined) => void;
   rootPid: number;
 }
 
@@ -113,10 +113,7 @@ function getRawProcessList(
     requestInProgress = true;
     native.getProcessList((processList: IProcessInfo[]) => {
       queue.forEach(r => {
-        const result = filter(r.rootPid, processList, MAX_FILTER_DEPTH);
-        if (result) {
-          r.callback(result);
-        }
+        r.callback(filter(r.rootPid, processList, MAX_FILTER_DEPTH));
       });
       queue.length = 0;
       requestInProgress = false;
