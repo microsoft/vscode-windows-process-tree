@@ -13,7 +13,7 @@ export enum ProcessDataFlag {
 }
 
 interface  IRequest {
-  callback: (processes: IProcessTreeNode | IProcessInfo[]) => void;
+  callback: (processes: IProcessTreeNode | IProcessInfo[] | undefined) => void;
   rootPid: number;
 }
 
@@ -33,7 +33,10 @@ const MAX_FILTER_DEPTH = 10;
  * @param processList The list of processes
  * @param maxDepth The maximum depth to search
  */
-export function buildProcessTree(rootPid: number, processList: IProcessInfo[], maxDepth: number): IProcessTreeNode {
+export function buildProcessTree(rootPid: number, processList: IProcessInfo[] | undefined, maxDepth: number): IProcessTreeNode | undefined {
+  if (!processList) {
+    return undefined;
+  }
   const rootIndex = processList.findIndex(v => v.pid === rootPid);
   if (rootIndex === -1) {
     return undefined;
@@ -41,12 +44,23 @@ export function buildProcessTree(rootPid: number, processList: IProcessInfo[], m
   const rootProcess = processList[rootIndex];
   const childIndexes = processList.filter(v => v.ppid === rootPid);
 
+  const children: IProcessTreeNode[] = [];
+
+  if (maxDepth !== 0) {
+    for (const c of childIndexes) {
+      const tree = buildProcessTree(c.pid, processList, maxDepth - 1);
+      if (tree) {
+        children.push(tree);
+      }
+    }
+  }
+
   return {
     pid: rootProcess.pid,
     name: rootProcess.name,
     memory: rootProcess.memory,
     commandLine: rootProcess.commandLine,
-    children: maxDepth === 0 ? [] : childIndexes.map(c => buildProcessTree(c.pid, processList, maxDepth - 1))
+    children
   };
 }
 
@@ -56,7 +70,7 @@ export function buildProcessTree(rootPid: number, processList: IProcessInfo[], m
  * @param processList The list of all processes
  * @param maxDepth The maximum depth to search
  */
-export function filterProcessList(rootPid: number, processList: IProcessInfo[], maxDepth: number): IProcessInfo[] {
+export function filterProcessList(rootPid: number, processList: IProcessInfo[], maxDepth: number): IProcessInfo[] | undefined {
   const rootIndex = processList.findIndex(v => v.pid === rootPid);
   if (rootIndex === -1) {
     return undefined;
@@ -68,14 +82,22 @@ export function filterProcessList(rootPid: number, processList: IProcessInfo[], 
 
   const rootProcess = processList[rootIndex];
   const childIndexes = processList.filter(v => v.ppid === rootPid);
-  return childIndexes.map(c => filterProcessList(c.pid, processList, maxDepth - 1)).reduce((prev, current) => prev.concat(current), [rootProcess]);
+
+  const children: IProcessInfo[][] = [];
+  for (const c of childIndexes) {
+    const list = filterProcessList(c.pid, processList, maxDepth - 1);
+    if (list) {
+      children.push(list);
+    }
+  }
+  return children.reduce((prev, current) => prev.concat(current), [rootProcess]);
 }
 
 function getRawProcessList(
   pid: number,
   queue: RequestQueue,
-  callback: (processList: IProcessInfo[] | IProcessTreeNode) => void,
-  filter: (pid: number, processList: IProcessInfo[], maxDepth: number) => IProcessInfo[] | IProcessTreeNode,
+  callback: (processList: IProcessInfo[] | IProcessTreeNode | undefined) => void,
+  filter: (pid: number, processList: IProcessInfo[] | undefined, maxDepth: number) => IProcessInfo[] | IProcessTreeNode | undefined,
   flags?: ProcessDataFlag
 ): void {
   queue.push({
@@ -105,7 +127,7 @@ function getRawProcessList(
  * @param callback The callback to use with the returned set of processes
  * @param flags The flags for what process data should be included
  */
-export function getProcessList(rootPid: number, callback: (processList: IProcessInfo[]) => void, flags?: ProcessDataFlag): void {
+export function getProcessList(rootPid: number, callback: (processList: IProcessInfo[] | undefined) => void, flags?: ProcessDataFlag): void {
   getRawProcessList(rootPid, processListRequestQueue, callback, filterProcessList, flags);
 }
 
@@ -124,6 +146,6 @@ export function getProcessCpuUsage(processList: IProcessInfo[], callback: (tree:
  * @param callback The callback to use with the returned list of processes
  * @param flags Flags indicating what process data should be written on each node
  */
-export function getProcessTree(rootPid: number, callback: (tree: IProcessTreeNode) => void, flags?: ProcessDataFlag): void {
+export function getProcessTree(rootPid: number, callback: (tree: IProcessTreeNode | undefined) => void, flags?: ProcessDataFlag): void {
   getRawProcessList(rootPid, processTreeRequestQueue, callback, buildProcessTree, flags);
 }

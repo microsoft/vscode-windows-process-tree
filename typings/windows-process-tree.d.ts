@@ -44,7 +44,7 @@ declare module 'windows-process-tree' {
    * @param callback - The callback to use with the returned list of processes.
    * @param flags - The flags for what process data should be included.
    */
-  export function getProcessTree(rootPid: number, callback: (tree: IProcessTreeNode) => void, flags?: ProcessDataFlag): void;
+  export function getProcessTree(rootPid: number, callback: (tree: IProcessTreeNode | undefined) => void, flags?: ProcessDataFlag): void;
 
   /**
    * Returns a list of processes containing the rootPid process and all of its descendants.
@@ -52,7 +52,7 @@ declare module 'windows-process-tree' {
    * @param callback - The callback to use with the returned set of processes.
    * @param flags - The flags for what process data should be included.
    */
-  export function getProcessList(rootPid: number, callback: (processList: IProcessInfo[]) => void, flags?: ProcessDataFlag): void;
+  export function getProcessList(rootPid: number, callback: (processList: IProcessInfo[] | undefined) => void, flags?: ProcessDataFlag): void;
 
   /**
    * Returns the list of processes annotated with cpu usage information.
