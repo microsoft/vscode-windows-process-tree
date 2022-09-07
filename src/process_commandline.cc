@@ -63,10 +63,12 @@ bool GetProcessCommandLine(ProcessInfo process_info[1024], uint32_t *process_cou
                                   process_info[*process_count].commandLine, sizeof(process_info[*process_count].commandLine),
                                   NULL, NULL);
 
+              HeapFree(heap, 0, buffer);
               CloseHandle(hProcess);
               HeapFree(heap, 0, pbi);
               return true;
             }
+            HeapFree(heap, 0, buffer);
           }
         }
       }
