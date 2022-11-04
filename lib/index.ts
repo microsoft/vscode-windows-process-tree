@@ -106,10 +106,18 @@ function getRawProcessList<T>(
   if (!requestInProgress) {
     requestInProgress = true;
     native.getProcessList((processList: IProcessInfo[]) => {
-      queue.forEach(r => {
-        r.callback(transform(r.rootPid, processList));
-      });
-      queue.length = 0;
+      // It is possible and valid for one callback to cause another to be added to the queue.
+      // To avoid orphaning those callbacks, we repeat the draining until the queue is empty.
+      // We use "queue.splice(0)" to atomically clear the queue, returning the batch to process.
+      // If any of those also made requests, we repeat until the callback chain completes.
+      //
+      // An alternative would be to splice the queue once and immediately reset requestInProgress
+      // before invoking callbacks: `CreateToolhelp32Snapshot` has safely completed at this point.
+      // However, that would circumvent the "too many requests" rate-limiting (?) concern above.
+      while (queue.length) {
+        queue.splice(0).forEach(r =>
+          r.callback(transform(r.rootPid, processList)));
+      }
       requestInProgress = false;
     }, flags || 0);
   }
