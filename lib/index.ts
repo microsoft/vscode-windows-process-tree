@@ -137,7 +137,7 @@ export function getProcessList(rootPid: number, callback: (processList: IProcess
  * @param callback The callback to use with the returned list of processes
  */
 export function getProcessCpuUsage(processList: IProcessInfo[], callback: (tree: IProcessCpuInfo[]) => void): void {
-  native.getProcessCpuUsage(processList, (processListWithCpu) => callback(processListWithCpu));
+  native.getProcessCpuUsage(processList, callback);
 }
 
 /**
