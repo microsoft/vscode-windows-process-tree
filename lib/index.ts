@@ -33,10 +33,7 @@ const MAX_FILTER_DEPTH = 10;
  * @param processList The list of processes
  * @param maxDepth The maximum depth to search
  */
-export function buildProcessTree(rootPid: number, processList: IProcessInfo[] | undefined, maxDepth: number = MAX_FILTER_DEPTH): IProcessTreeNode | undefined {
-  if (!processList) {
-    return undefined;
-  }
+export function buildProcessTree(rootPid: number, processList: IProcessInfo[], maxDepth: number = MAX_FILTER_DEPTH): IProcessTreeNode | undefined {
   const rootIndex = processList.findIndex(v => v.pid === rootPid);
   if (rootIndex === -1) {
     return undefined;
@@ -97,7 +94,7 @@ function getRawProcessList(
   rootPid: number,
   queue: RequestQueue,
   callback: (processList: IProcessInfo[] | IProcessTreeNode | undefined) => void,
-  transform: (pid: number, processList: IProcessInfo[] | undefined) => IProcessInfo[] | IProcessTreeNode | undefined,
+  transform: (pid: number, processList: IProcessInfo[]) => IProcessInfo[] | IProcessTreeNode | undefined,
   flags?: ProcessDataFlag
 ): void {
   queue.push({ rootPid, callback });
