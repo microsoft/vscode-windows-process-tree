@@ -33,7 +33,7 @@ const MAX_FILTER_DEPTH = 10;
  * @param processList The list of processes
  * @param maxDepth The maximum depth to search
  */
-export function buildProcessTree(rootPid: number, processList: IProcessInfo[] | undefined, maxDepth: number): IProcessTreeNode | undefined {
+export function buildProcessTree(rootPid: number, processList: IProcessInfo[] | undefined, maxDepth: number = MAX_FILTER_DEPTH): IProcessTreeNode | undefined {
   if (!processList) {
     return undefined;
   }
@@ -70,7 +70,7 @@ export function buildProcessTree(rootPid: number, processList: IProcessInfo[] | 
  * @param processList The list of all processes
  * @param maxDepth The maximum depth to search
  */
-export function filterProcessList(rootPid: number, processList: IProcessInfo[], maxDepth: number): IProcessInfo[] | undefined {
+export function filterProcessList(rootPid: number, processList: IProcessInfo[], maxDepth: number = MAX_FILTER_DEPTH): IProcessInfo[] | undefined {
   const rootIndex = processList.findIndex(v => v.pid === rootPid);
   if (rootIndex === -1) {
     return undefined;
@@ -97,7 +97,7 @@ function getRawProcessList(
   rootPid: number,
   queue: RequestQueue,
   callback: (processList: IProcessInfo[] | IProcessTreeNode | undefined) => void,
-  filter: (pid: number, processList: IProcessInfo[] | undefined, maxDepth: number) => IProcessInfo[] | IProcessTreeNode | undefined,
+  transform: (pid: number, processList: IProcessInfo[] | undefined) => IProcessInfo[] | IProcessTreeNode | undefined,
   flags?: ProcessDataFlag
 ): void {
   queue.push({ rootPid, callback });
@@ -110,7 +110,7 @@ function getRawProcessList(
     requestInProgress = true;
     native.getProcessList((processList: IProcessInfo[]) => {
       queue.forEach(r => {
-        r.callback(filter(r.rootPid, processList, MAX_FILTER_DEPTH));
+        r.callback(transform(r.rootPid, processList));
       });
       queue.length = 0;
       requestInProgress = false;
