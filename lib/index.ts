@@ -94,16 +94,13 @@ export function filterProcessList(rootPid: number, processList: IProcessInfo[], 
 }
 
 function getRawProcessList(
-  pid: number,
+  rootPid: number,
   queue: RequestQueue,
   callback: (processList: IProcessInfo[] | IProcessTreeNode | undefined) => void,
   filter: (pid: number, processList: IProcessInfo[] | undefined, maxDepth: number) => IProcessInfo[] | IProcessTreeNode | undefined,
   flags?: ProcessDataFlag
 ): void {
-  queue.push({
-    callback: callback,
-    rootPid: pid
-  });
+  queue.push({ rootPid, callback });
 
   // Only make a new request if there is not currently a request in progress.
   // This prevents too many requests from being made, there is also a crash that
