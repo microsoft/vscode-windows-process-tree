@@ -12,18 +12,18 @@ export enum ProcessDataFlag {
   CommandLine = 2
 }
 
-interface  IRequest {
-  callback: (processes: IProcessTreeNode | IProcessInfo[] | undefined) => void;
+interface  IRequest<T> {
+  callback: (result: T) => void;
   rootPid: number;
 }
 
-type RequestQueue = IRequest[];
+type RequestQueue<T> = IRequest<T>[];
 
 // requestInProgress is used for any function that uses CreateToolhelp32Snapshot, as multiple calls
 // to this cannot be done at the same time.
 let requestInProgress = false;
-const processListRequestQueue: RequestQueue = [];
-const processTreeRequestQueue: RequestQueue = [];
+const processListRequestQueue: RequestQueue<IProcessInfo[] | undefined> = [];
+const processTreeRequestQueue: RequestQueue<IProcessTreeNode | undefined> = [];
 
 const MAX_FILTER_DEPTH = 10;
 
@@ -90,11 +90,11 @@ export function filterProcessList(rootPid: number, processList: IProcessInfo[], 
   return children.reduce((prev, current) => prev.concat(current), [rootProcess]);
 }
 
-function getRawProcessList(
+function getRawProcessList<T>(
   rootPid: number,
-  queue: RequestQueue,
-  callback: (processList: IProcessInfo[] | IProcessTreeNode | undefined) => void,
-  transform: (pid: number, processList: IProcessInfo[]) => IProcessInfo[] | IProcessTreeNode | undefined,
+  queue: RequestQueue<T>,
+  callback: (result: T) => void,
+  transform: (pid: number, processList: IProcessInfo[]) => T,
   flags?: ProcessDataFlag
 ): void {
   queue.push({ rootPid, callback });
