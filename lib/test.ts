@@ -6,8 +6,10 @@
 import * as assert from 'assert';
 import * as child_process from 'child_process';
 import * as path from 'path';
+import { promisify } from 'util';
 import { getProcessTree, getProcessList, getProcessCpuUsage, ProcessDataFlag, buildProcessTree, filterProcessList } from './index';
 import { Worker, isMainThread } from 'worker_threads';
+import { IProcessCpuInfo, IProcessInfo, IProcessTreeNode } from 'windows-process-tree';
 const native = require('../build/Release/windows_process_tree.node');
 
 function pollUntil(makePromise: () => Promise<boolean>, cb: () => void, interval: number, timeout: number): void {
@@ -108,6 +110,16 @@ describe('getProcessList', () => {
     });
   });
 
+  it('should work promisified', async () => {
+    const getProcessList$promisified = promisify(getProcessList);
+    const list: IProcessInfo[] = await getProcessList$promisified(process.pid);
+
+    assert.strictEqual(list.length, 1);
+    const proc = list[0];
+    assert.strictEqual(proc.name, 'node.exe');
+    assert.strictEqual(proc.pid, process.pid);
+  });
+
   it('should return a list containing this process\'s memory if the flag is set', done => {
     getProcessList(process.pid, (list) => {
       assert.strictEqual(list?.length, 1);
@@ -162,6 +174,16 @@ describe('getProcessCpuUsage', () => {
     });
   });
 
+  it('should work promisified', async () => {
+    const getProcessCpuUsage$promisified = promisify(getProcessCpuUsage);
+    const annotatedList: IProcessCpuInfo[] = await getProcessCpuUsage$promisified([{ pid: process.pid, ppid: process.ppid, name: 'node.exe' }]);
+
+    assert.strictEqual(annotatedList.length, 1);
+    const proc = annotatedList[0];
+    assert.strictEqual(proc.name, 'node.exe');
+    assert.strictEqual(proc.pid, process.pid);
+  });
+
   it('should handle multiple calls gracefully', function (done: Mocha.Done): void {
     this.timeout(3000);
 
@@ -199,6 +221,14 @@ describe('getProcessTree', () => {
       assert.strictEqual(tree!.children.length, 0);
       done();
     });
+  });
+
+  it('should work promisified', async () => {
+    const getProcessTree$promisified = promisify(getProcessTree);
+    const tree: IProcessTreeNode = await getProcessTree$promisified(process.pid);
+
+    assert.strictEqual(tree?.name, 'node.exe');
+    assert.strictEqual(tree?.pid, process.pid);
   });
 
   it('should return a tree containing this process\'s memory if the flag is set', done => {
