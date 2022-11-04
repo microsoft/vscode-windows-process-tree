@@ -37,12 +37,12 @@ void GetProcessCpuUsage(const Nan::FunctionCallbackInfo<v8::Value>& args) {
   }
 
   if (!args[0]->IsArray()) {
-    Nan::ThrowTypeError("The first argument of GetProcessCpuUsage, callback, must be an array.");
+    Nan::ThrowTypeError("The first argument of GetProcessCpuUsage, processList, must be an array.");
     return;
   }
 
   if (!args[1]->IsFunction()) {
-    Nan::ThrowTypeError("The second argument of GetProcessCpuUsage, flags, must be a function.");
+    Nan::ThrowTypeError("The second argument of GetProcessCpuUsage, callback, must be a function.");
     return;
   }
 
