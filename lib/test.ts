@@ -6,10 +6,10 @@
 import * as assert from 'assert';
 import * as child_process from 'child_process';
 import * as path from 'path';
-import { promisify } from 'util';
 import { getProcessTree, getProcessList, getProcessCpuUsage, ProcessDataFlag, buildProcessTree, filterProcessList } from './index';
 import { Worker, isMainThread } from 'worker_threads';
 import { IProcessCpuInfo, IProcessInfo, IProcessTreeNode } from 'windows-process-tree';
+import * as promises from './promises';
 const native = require('../build/Release/windows_process_tree.node');
 
 function pollUntil(makePromise: () => Promise<boolean>, cb: () => void, interval: number, timeout: number): void {
@@ -111,8 +111,7 @@ describe('getProcessList', () => {
   });
 
   it('should work promisified', async () => {
-    const getProcessList$promisified = promisify(getProcessList);
-    const list: IProcessInfo[] = await getProcessList$promisified(process.pid);
+    const list: IProcessInfo[] = await promises.getProcessList(process.pid);
 
     assert.strictEqual(list.length, 1);
     const proc = list[0];
@@ -175,8 +174,7 @@ describe('getProcessCpuUsage', () => {
   });
 
   it('should work promisified', async () => {
-    const getProcessCpuUsage$promisified = promisify(getProcessCpuUsage);
-    const annotatedList: IProcessCpuInfo[] = await getProcessCpuUsage$promisified([{ pid: process.pid, ppid: process.ppid, name: 'node.exe' }]);
+    const annotatedList: IProcessCpuInfo[] = await promises.getProcessCpuUsage([{ pid: process.pid, ppid: process.ppid, name: 'node.exe' }]);
 
     assert.strictEqual(annotatedList.length, 1);
     const proc = annotatedList[0];
@@ -224,8 +222,7 @@ describe('getProcessTree', () => {
   });
 
   it('should work promisified', async () => {
-    const getProcessTree$promisified = promisify(getProcessTree);
-    const tree: IProcessTreeNode = await getProcessTree$promisified(process.pid);
+    const tree: IProcessTreeNode = await promises.getProcessTree(process.pid);
 
     assert.strictEqual(tree?.name, 'node.exe');
     assert.strictEqual(tree?.pid, process.pid);
