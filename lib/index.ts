@@ -14,13 +14,10 @@ export enum ProcessDataFlag {
 
 type RequestCallback = (processList: IProcessInfo[]) => void;
 
-type RequestQueue = RequestCallback[];
-
 // requestInProgress is used for any function that uses CreateToolhelp32Snapshot, as multiple calls
 // to this cannot be done at the same time.
 let requestInProgress = false;
-const processListRequestQueue: RequestQueue = [];
-const processTreeRequestQueue: RequestQueue = [];
+const globalRequestQueue: RequestCallback[] = [];
 
 const MAX_FILTER_DEPTH = 10;
 
@@ -88,10 +85,11 @@ export function filterProcessList(rootPid: number, processList: IProcessInfo[], 
 }
 
 function getRawProcessList(
-  queue: RequestQueue,
   callback: RequestCallback,
   flags?: ProcessDataFlag
 ): void {
+  const queue = globalRequestQueue;
+
   queue.push(callback);
 
   // Only make a new request if there is not currently a request in progress.
@@ -124,7 +122,7 @@ function getRawProcessList(
  * @param flags The flags for what process data should be included
  */
 export function getProcessList(rootPid: number, callback: (processList: IProcessInfo[] | undefined) => void, flags?: ProcessDataFlag): void {
-  getRawProcessList(processListRequestQueue, procs => callback(filterProcessList(rootPid, procs)), flags);
+  getRawProcessList(procs => callback(filterProcessList(rootPid, procs)), flags);
 }
 
 /**
@@ -143,5 +141,5 @@ export function getProcessCpuUsage(processList: IProcessInfo[], callback: (tree:
  * @param flags Flags indicating what process data should be written on each node
  */
 export function getProcessTree(rootPid: number, callback: (tree: IProcessTreeNode | undefined) => void, flags?: ProcessDataFlag): void {
-  getRawProcessList(processTreeRequestQueue, procs => callback(buildProcessTree(rootPid, procs)), flags);
+  getRawProcessList(procs => callback(buildProcessTree(rootPid, procs)), flags);
 }
