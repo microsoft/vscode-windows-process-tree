@@ -12,18 +12,15 @@ export enum ProcessDataFlag {
   CommandLine = 2
 }
 
-interface  IRequest<T> {
-  callback: (result: T) => void;
-  rootPid: number;
-}
+type RequestCallback = (processList: IProcessInfo[]) => void;
 
-type RequestQueue<T> = IRequest<T>[];
+type RequestQueue = RequestCallback[];
 
 // requestInProgress is used for any function that uses CreateToolhelp32Snapshot, as multiple calls
 // to this cannot be done at the same time.
 let requestInProgress = false;
-const processListRequestQueue: RequestQueue<IProcessInfo[] | undefined> = [];
-const processTreeRequestQueue: RequestQueue<IProcessTreeNode | undefined> = [];
+const processListRequestQueue: RequestQueue = [];
+const processTreeRequestQueue: RequestQueue = [];
 
 const MAX_FILTER_DEPTH = 10;
 
@@ -90,14 +87,12 @@ export function filterProcessList(rootPid: number, processList: IProcessInfo[], 
   return children.reduce((prev, current) => prev.concat(current), [rootProcess]);
 }
 
-function getRawProcessList<T>(
-  rootPid: number,
-  queue: RequestQueue<T>,
-  callback: (result: T) => void,
-  transform: (pid: number, processList: IProcessInfo[]) => T,
+function getRawProcessList(
+  queue: RequestQueue,
+  callback: RequestCallback,
   flags?: ProcessDataFlag
 ): void {
-  queue.push({ rootPid, callback });
+  queue.push(callback);
 
   // Only make a new request if there is not currently a request in progress.
   // This prevents too many requests from being made, there is also a crash that
@@ -115,8 +110,7 @@ function getRawProcessList<T>(
       // before invoking callbacks: `CreateToolhelp32Snapshot` has safely completed at this point.
       // However, that would circumvent the "too many requests" rate-limiting (?) concern above.
       while (queue.length) {
-        queue.splice(0).forEach(r =>
-          r.callback(transform(r.rootPid, processList)));
+        queue.splice(0).forEach(cb => cb(processList));
       }
       requestInProgress = false;
     }, flags || 0);
@@ -130,7 +124,7 @@ function getRawProcessList<T>(
  * @param flags The flags for what process data should be included
  */
 export function getProcessList(rootPid: number, callback: (processList: IProcessInfo[] | undefined) => void, flags?: ProcessDataFlag): void {
-  getRawProcessList(rootPid, processListRequestQueue, callback, filterProcessList, flags);
+  getRawProcessList(processListRequestQueue, procs => callback(filterProcessList(rootPid, procs)), flags);
 }
 
 /**
@@ -149,5 +143,5 @@ export function getProcessCpuUsage(processList: IProcessInfo[], callback: (tree:
  * @param flags Flags indicating what process data should be written on each node
  */
 export function getProcessTree(rootPid: number, callback: (tree: IProcessTreeNode | undefined) => void, flags?: ProcessDataFlag): void {
-  getRawProcessList(rootPid, processTreeRequestQueue, callback, buildProcessTree, flags);
+  getRawProcessList(processTreeRequestQueue, procs => callback(buildProcessTree(rootPid, procs)), flags);
 }
