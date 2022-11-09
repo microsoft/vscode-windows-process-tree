@@ -144,6 +144,11 @@ describe('getProcessList', () => {
 });
 
 describe('getProcessCpuUsage', () => {
+  it('should throw on incorrect argument types', done => {
+    assert.throws(() => getProcessCpuUsage('<…>' as any, () => null), /processList.*array/);
+    assert.throws(() => getProcessCpuUsage([], '<…>' as any), /callback.*function/);
+    done();
+  });
 
   it('should get process cpu usage', (done) => {
       getProcessCpuUsage([{ pid: process.pid, ppid: process.ppid, name: 'node.exe' }], (annotatedList) => {
