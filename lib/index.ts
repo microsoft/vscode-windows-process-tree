@@ -12,18 +12,18 @@ export enum ProcessDataFlag {
   CommandLine = 2
 }
 
-interface  IRequest {
-  callback: (processes: IProcessTreeNode | IProcessInfo[] | undefined) => void;
+interface  IRequest<T> {
+  callback: (result: T) => void;
   rootPid: number;
 }
 
-type RequestQueue = IRequest[];
+type RequestQueue<T> = IRequest<T>[];
 
 // requestInProgress is used for any function that uses CreateToolhelp32Snapshot, as multiple calls
 // to this cannot be done at the same time.
 let requestInProgress = false;
-const processListRequestQueue: RequestQueue = [];
-const processTreeRequestQueue: RequestQueue = [];
+const processListRequestQueue: RequestQueue<IProcessInfo[] | undefined> = [];
+const processTreeRequestQueue: RequestQueue<IProcessTreeNode | undefined> = [];
 
 const MAX_FILTER_DEPTH = 10;
 
@@ -33,10 +33,7 @@ const MAX_FILTER_DEPTH = 10;
  * @param processList The list of processes
  * @param maxDepth The maximum depth to search
  */
-export function buildProcessTree(rootPid: number, processList: IProcessInfo[] | undefined, maxDepth: number): IProcessTreeNode | undefined {
-  if (!processList) {
-    return undefined;
-  }
+export function buildProcessTree(rootPid: number, processList: IProcessInfo[], maxDepth: number = MAX_FILTER_DEPTH): IProcessTreeNode | undefined {
   const rootIndex = processList.findIndex(v => v.pid === rootPid);
   if (rootIndex === -1) {
     return undefined;
@@ -70,7 +67,7 @@ export function buildProcessTree(rootPid: number, processList: IProcessInfo[] | 
  * @param processList The list of all processes
  * @param maxDepth The maximum depth to search
  */
-export function filterProcessList(rootPid: number, processList: IProcessInfo[], maxDepth: number): IProcessInfo[] | undefined {
+export function filterProcessList(rootPid: number, processList: IProcessInfo[], maxDepth: number = MAX_FILTER_DEPTH): IProcessInfo[] | undefined {
   const rootIndex = processList.findIndex(v => v.pid === rootPid);
   if (rootIndex === -1) {
     return undefined;
@@ -93,17 +90,14 @@ export function filterProcessList(rootPid: number, processList: IProcessInfo[], 
   return children.reduce((prev, current) => prev.concat(current), [rootProcess]);
 }
 
-function getRawProcessList(
-  pid: number,
-  queue: RequestQueue,
-  callback: (processList: IProcessInfo[] | IProcessTreeNode | undefined) => void,
-  filter: (pid: number, processList: IProcessInfo[] | undefined, maxDepth: number) => IProcessInfo[] | IProcessTreeNode | undefined,
+function getRawProcessList<T>(
+  rootPid: number,
+  queue: RequestQueue<T>,
+  callback: (result: T) => void,
+  transform: (pid: number, processList: IProcessInfo[]) => T,
   flags?: ProcessDataFlag
 ): void {
-  queue.push({
-    callback: callback,
-    rootPid: pid
-  });
+  queue.push({ rootPid, callback });
 
   // Only make a new request if there is not currently a request in progress.
   // This prevents too many requests from being made, there is also a crash that
@@ -113,7 +107,7 @@ function getRawProcessList(
     requestInProgress = true;
     native.getProcessList((processList: IProcessInfo[]) => {
       queue.forEach(r => {
-        r.callback(filter(r.rootPid, processList, MAX_FILTER_DEPTH));
+        r.callback(transform(r.rootPid, processList));
       });
       queue.length = 0;
       requestInProgress = false;
