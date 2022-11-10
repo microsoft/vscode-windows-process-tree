@@ -3,6 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { promisify } from 'util';
+
 const native = require('../build/Release/windows_process_tree.node');
 import { IProcessInfo, IProcessTreeNode, IProcessCpuInfo } from 'windows-process-tree';
 
@@ -125,6 +127,16 @@ export function getProcessList(rootPid: number, callback: (processList: IProcess
   getRawProcessList(procs => callback(filterProcessList(rootPid, procs)), flags);
 }
 
+export namespace getProcessList {
+  // tslint:disable-next-line:variable-name
+  export const __promisify__ = (rootPid: number, flags?: ProcessDataFlag): Promise<IProcessInfo[]> => new Promise((resolve, reject) => {
+    const callback = (processList: IProcessInfo[] | undefined) => processList
+      ? resolve(processList)
+      : reject(new Error(`Could not find PID ${rootPid}`));
+    getProcessList(rootPid, callback, flags);
+  });
+}
+
 /**
  * Returns the list of processes annotated with cpu usage information
  * @param processList The list of processes
@@ -132,6 +144,18 @@ export function getProcessList(rootPid: number, callback: (processList: IProcess
  */
 export function getProcessCpuUsage(processList: IProcessInfo[], callback: (tree: IProcessCpuInfo[]) => void): void {
   native.getProcessCpuUsage(processList, callback);
+}
+
+export namespace getProcessCpuUsage {
+  // tslint:disable-next-line:variable-name
+  export const __promisify__ = (processList: IProcessInfo[]): Promise<IProcessCpuInfo[]> => new Promise((resolve, reject) => {
+    // NOTE: Currently this callback is *never* called with `undefined`, unlike the other functions which do PID lookups.
+    // The handling here is just for consistency and future-proofing.
+    const callback = (cpuInfos: IProcessCpuInfo[] | undefined) => cpuInfos
+      ? resolve(cpuInfos)
+      : reject(new Error('Failed to collect CPU info'));
+    getProcessCpuUsage(processList, callback);
+  });
 }
 
 /**
@@ -143,3 +167,18 @@ export function getProcessCpuUsage(processList: IProcessInfo[], callback: (tree:
 export function getProcessTree(rootPid: number, callback: (tree: IProcessTreeNode | undefined) => void, flags?: ProcessDataFlag): void {
   getRawProcessList(procs => callback(buildProcessTree(rootPid, procs)), flags);
 }
+
+export namespace getProcessTree {
+  // tslint:disable-next-line:variable-name
+  export const __promisify__ = (rootPid: number, flags?: ProcessDataFlag): Promise<IProcessTreeNode> => new Promise((resolve, reject) => {
+    const callback = (tree: IProcessTreeNode | undefined) => tree
+      ? resolve(tree)
+      : reject(new Error(`Could not find PID ${rootPid}`));
+    getProcessTree(rootPid, callback, flags);
+  });
+}
+
+// Since symbol properties can't be declared via namespace merging, we just define __promisify__ that way and
+// and manually set the "modern" promisify symbol: https://github.com/microsoft/TypeScript/issues/36813
+[getProcessTree, getProcessList, getProcessCpuUsage].forEach(func =>
+  Object.defineProperty(func, promisify.custom, { enumerable: false, value: func.__promisify__ }));

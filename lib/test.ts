@@ -8,6 +8,8 @@ import * as child_process from 'child_process';
 import * as path from 'path';
 import { getProcessTree, getProcessList, getProcessCpuUsage, ProcessDataFlag, buildProcessTree, filterProcessList } from './index';
 import { Worker, isMainThread } from 'worker_threads';
+import { IProcessCpuInfo, IProcessInfo, IProcessTreeNode } from 'windows-process-tree';
+import * as promises from './promises';
 const native = require('../build/Release/windows_process_tree.node');
 
 function pollUntil(makePromise: () => Promise<boolean>, cb: () => void, interval: number, timeout: number): void {
@@ -108,6 +110,15 @@ describe('getProcessList', () => {
     });
   });
 
+  it('should work promisified', async () => {
+    const list: IProcessInfo[] = await promises.getProcessList(process.pid);
+
+    assert.strictEqual(list.length, 1);
+    const proc = list[0];
+    assert.strictEqual(proc.name, 'node.exe');
+    assert.strictEqual(proc.pid, process.pid);
+  });
+
   it('should return a list containing this process\'s memory if the flag is set', done => {
     getProcessList(process.pid, (list) => {
       assert.strictEqual(list?.length, 1);
@@ -162,6 +173,15 @@ describe('getProcessCpuUsage', () => {
     });
   });
 
+  it('should work promisified', async () => {
+    const annotatedList: IProcessCpuInfo[] = await promises.getProcessCpuUsage([{ pid: process.pid, ppid: process.ppid, name: 'node.exe' }]);
+
+    assert.strictEqual(annotatedList.length, 1);
+    const proc = annotatedList[0];
+    assert.strictEqual(proc.name, 'node.exe');
+    assert.strictEqual(proc.pid, process.pid);
+  });
+
   it('should handle multiple calls gracefully', function (done: Mocha.Done): void {
     this.timeout(3000);
 
@@ -199,6 +219,13 @@ describe('getProcessTree', () => {
       assert.strictEqual(tree!.children.length, 0);
       done();
     });
+  });
+
+  it('should work promisified', async () => {
+    const tree: IProcessTreeNode = await promises.getProcessTree(process.pid);
+
+    assert.strictEqual(tree?.name, 'node.exe');
+    assert.strictEqual(tree?.pid, process.pid);
   });
 
   it('should return a tree containing this process\'s memory if the flag is set', done => {

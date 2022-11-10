@@ -46,6 +46,10 @@ declare module 'windows-process-tree' {
    */
   export function getProcessTree(rootPid: number, callback: (tree: IProcessTreeNode | undefined) => void, flags?: ProcessDataFlag): void;
 
+  namespace getProcessTree {
+    function __promisify__(rootPid: number, flags?: ProcessDataFlag): Promise<IProcessTreeNode>;
+  }
+
   /**
    * Returns a list of processes containing the rootPid process and all of its descendants.
    * @param rootPid - The pid of the process of interest.
@@ -54,10 +58,18 @@ declare module 'windows-process-tree' {
    */
   export function getProcessList(rootPid: number, callback: (processList: IProcessInfo[] | undefined) => void, flags?: ProcessDataFlag): void;
 
+  namespace getProcessList {
+    function __promisify__(rootPid: number, flags?: ProcessDataFlag): Promise<IProcessInfo[]>;
+  }
+
   /**
    * Returns the list of processes annotated with cpu usage information.
    * @param processList - The list of processes.
    * @param callback - The callback to use with the returned list of processes.
    */
   export function getProcessCpuUsage(processList: IProcessInfo[], callback: (processListWithCpu: IProcessCpuInfo[]) => void): void;
+
+  namespace getProcessCpuUsage {
+    function __promisify__(processList: IProcessInfo[]): Promise<IProcessCpuInfo[]>;
+  }
 }
