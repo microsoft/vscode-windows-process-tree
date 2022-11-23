@@ -23,38 +23,70 @@ const globalRequestQueue: RequestCallback[] = [];
 
 const MAX_FILTER_DEPTH = 10;
 
+interface IProcessInfoNode {
+  info: IProcessInfo;
+  children: IProcessInfoNode[];
+}
+
+/**
+ * Construct tree of process infos and their children, returning the requested "root" node.
+ * This is performed in a single iteration pass and allows reasonably efficient traversal.
+ *
+ * @param rootPid the pid of the "root" process to search for
+ * @param processList the list of `IProcessInfo`s
+ * @returns the `IProcessInfoNode` representing the root and all of its connected children
+ */
+function buildRawTree(rootPid: number, processList: Iterable<IProcessInfo>): IProcessInfoNode | undefined {
+  let root: IProcessInfoNode | undefined;
+
+  // Map of pid to the array of immediate children.
+  // Each array is shared by reference, such that:
+  // forall n. Object.is(n.children, childrenOf[n.info.pid])
+  const childrenOf: { [_: number]: IProcessInfoNode[] | undefined } = {};
+
+  // Iterate over processList (once).
+  // Add each process to children of its parent pid.
+  // Note the process corresponding to `rootPid` when we see it.
+  for (const info of processList) {
+    const myChildren = (childrenOf[info.pid] ??= []);
+    const mySiblings = (childrenOf[info.ppid] ??= []);
+
+    const node = { info, children: myChildren };
+    mySiblings.push(node);
+
+    if (root === undefined && info.pid === rootPid) {
+      root = node;
+    }
+  }
+
+  return root;
+}
+
 /**
  * Filters a list of processes to rootPid and its descendents and creates a tree
  * @param rootPid The process to use as the root
  * @param processList The list of processes
  * @param maxDepth The maximum depth to search
  */
-export function buildProcessTree(rootPid: number, processList: IProcessInfo[], maxDepth: number = MAX_FILTER_DEPTH): IProcessTreeNode | undefined {
-  const rootIndex = processList.findIndex(v => v.pid === rootPid);
-  if (rootIndex === -1) {
+export function buildProcessTree(rootPid: number, processList: Iterable<IProcessInfo>, maxDepth: number = MAX_FILTER_DEPTH): IProcessTreeNode | undefined {
+  const root = buildRawTree(rootPid, processList);
+  if (root === undefined) {
     return undefined;
   }
-  const rootProcess = processList[rootIndex];
-  const childIndexes = processList.filter(v => v.ppid === rootPid);
 
-  const children: IProcessTreeNode[] = [];
+  // This differs from the "raw" tree somewhat trivially.
+  // • the properties are inlined/splatted
+  // • the 'ppid' field is omitted
+  // • the depth of the tree is limited by `maxDepth`
+  const buildNode = ({ info: { pid, name, memory, commandLine }, children }: IProcessInfoNode, depth: number): IProcessTreeNode => ({
+    pid,
+    name,
+    memory,
+    commandLine,
+    children: depth > 0 ? children.map(c => buildNode(c, depth - 1)) : [],
+  });
 
-  if (maxDepth !== 0) {
-    for (const c of childIndexes) {
-      const tree = buildProcessTree(c.pid, processList, maxDepth - 1);
-      if (tree) {
-        children.push(tree);
-      }
-    }
-  }
-
-  return {
-    pid: rootProcess.pid,
-    name: rootProcess.name,
-    memory: rootProcess.memory,
-    commandLine: rootProcess.commandLine,
-    children
-  };
+  return buildNode(root, maxDepth);
 }
 
 /**
@@ -63,27 +95,25 @@ export function buildProcessTree(rootPid: number, processList: IProcessInfo[], m
  * @param processList The list of all processes
  * @param maxDepth The maximum depth to search
  */
-export function filterProcessList(rootPid: number, processList: IProcessInfo[], maxDepth: number = MAX_FILTER_DEPTH): IProcessInfo[] | undefined {
-  const rootIndex = processList.findIndex(v => v.pid === rootPid);
-  if (rootIndex === -1) {
+export function filterProcessList(rootPid: number, processList: Iterable<IProcessInfo>, maxDepth: number = MAX_FILTER_DEPTH): IProcessInfo[] | undefined {
+  const root = buildRawTree(rootPid, processList);
+  if (root === undefined) {
     return undefined;
   }
 
-  if (maxDepth === -1) {
+  if (maxDepth < 0) {
     return [];
   }
 
-  const rootProcess = processList[rootIndex];
-  const childIndexes = processList.filter(v => v.ppid === rootPid);
-
-  const children: IProcessInfo[][] = [];
-  for (const c of childIndexes) {
-    const list = filterProcessList(c.pid, processList, maxDepth - 1);
-    if (list) {
-      children.push(list);
+  function buildList({ info, children }: IProcessInfoNode, depth: number, accum: IProcessInfo[]): IProcessInfo[] {
+    accum.push(info);
+    if (depth > 0) {
+      children.forEach(c => buildList(c, depth - 1, accum));
     }
+    return accum;
   }
-  return children.reduce((prev, current) => prev.concat(current), [rootProcess]);
+
+  return buildList(root, maxDepth, []);
 }
 
 function getRawProcessList(
