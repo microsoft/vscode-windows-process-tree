@@ -1,0 +1,47 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - main
+pr: none
+
+resources:
+  repositories:
+    - repository: templates
+      type: github
+      name: microsoft/vscode-engineering
+      ref: main
+      endpoint: Monaco
+
+parameters:
+  - name: publishPackage
+    displayName: 🚀 Publish windows-process-tree
+    type: boolean
+    default: false
+
+extends:
+  template: azure-pipelines/npm-package/pipeline.yml@templates
+  parameters:
+    npmPackages:
+      - name: windows-process-tree
+
+        buildSteps:
+          - script: yarn --frozen-lockfile
+            displayName: Install dependencies
+
+          # the rest of the build steps are part of the 'prepack' script, automatically run when the pipeline invokes 'yarn pack'
+
+        testPlatforms:
+          - name: Windows
+            nodeVersions:
+              - 16.x
+
+        testSteps:
+          - script: yarn --frozen-lockfile
+            displayName: Install dependencies
+
+          - script: yarn test
+            displayName: Compile & test npm package
+
+        publishPackage: ${{ parameters.publishPackage }}
