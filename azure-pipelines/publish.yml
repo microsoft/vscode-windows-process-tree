@@ -45,3 +45,4 @@ extends:
             displayName: Compile & test npm package
 
         publishPackage: ${{ parameters.publishPackage }}
+        packagePlatform: Windows
