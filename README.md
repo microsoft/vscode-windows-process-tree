@@ -1,6 +1,8 @@
-# windows-process-tree
+# @vscode/windows-process-tree
 
 [![Build status](https://github.com/microsoft/vscode-windows-process-tree/actions/workflows/node.js.yml/badge.svg)](https://github.com/microsoft/vscode-windows-process-tree/actions/workflows/node.js.yml)
+
+[![npm version](https://badge.fury.io/js/@vscode%2Fwindows-process-tree.svg)](https://badge.fury.io/js/@vscode%2Fwindows-process-tree)
 
 A Node.js library that enables quickly fetching process tree information for a particular process ID on Windows.
 
@@ -8,7 +10,7 @@ A Node.js library that enables quickly fetching process tree information for a p
 
 ```ts
 import * as child_process from 'child_process';
-import { getProcessTree } from 'windows-process-tree';
+import { getProcessTree } from '@vscode/windows-process-tree';
 
 if (process.platform === 'win32') {
   child_process.spawn('cmd.exe');
