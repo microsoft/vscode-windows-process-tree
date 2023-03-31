@@ -1,5 +1,5 @@
 {
-  "name": "windows-process-tree",
+  "name": "@vscode/windows-process-tree",
   "version": "0.4.1",
   "description": "Fetch a Windows process tree fast",
   "main": "lib/index.js",
@@ -15,11 +15,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git://github.com/Microsoft/vscode-windows-process-tree.git"
+    "url": "git://github.com/microsoft/vscode-windows-process-tree.git"
   },
-  "homepage": "https://github.com/Microsoft/vscode-windows-process-tree",
+  "homepage": "https://github.com/microsoft/vscode-windows-process-tree",
   "bugs": {
-    "url": "https://github.com/Microsoft/vscode-windows-process-tree/issues"
+    "url": "https://github.com/microsoft/vscode-windows-process-tree/issues"
   },
   "dependencies": {
     "nan": "^2.17.0"
