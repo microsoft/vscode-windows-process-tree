@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-declare module 'windows-process-tree' {
+declare module '@vscode/windows-process-tree' {
   export enum ProcessDataFlag {
     None = 0,
     Memory = 1,
@@ -30,7 +30,7 @@ declare module 'windows-process-tree' {
     cpu?: number;
   }
 
-  export interface IProcessTreeNode  {
+  export interface IProcessTreeNode {
     pid: number;
     name: string;
     memory?: number;
