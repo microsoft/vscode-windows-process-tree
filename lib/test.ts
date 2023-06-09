@@ -398,11 +398,11 @@ if (isWindows) {
     });
 
     it('should not be implemented promisified on Windows', () => {
-      assert.throws(async () => {
-        await promises.getProcessTree(process.pid);
+      assert.rejects(() => {
+        return promises.getProcessTree(process.pid);
       });
-      assert.throws(async () => {
-        await promises.getProcessTree(process.pid, ProcessDataFlag.CommandLine);
+      assert.rejects(() => {
+        return promises.getProcessTree(process.pid, ProcessDataFlag.CommandLine);
       });
     });
   });
@@ -418,11 +418,11 @@ if (isWindows) {
     });
 
     it('should not be implemented promisified on Windows', () => {
-      assert.throws(async () => {
-        await promises.getProcessList(process.pid);
+      assert.rejects(() => {
+        return promises.getProcessList(process.pid);
       });
-      assert.throws(async () => {
-        await promises.getProcessList(process.pid, ProcessDataFlag.Memory);
+      assert.rejects(() => {
+        return promises.getProcessList(process.pid, ProcessDataFlag.Memory);
       });
     });
   });
@@ -435,8 +435,8 @@ if (isWindows) {
     });
 
     it('should not be implemented promisified on Windows', () => {
-      assert.throws(async () => {
-        await promises.getProcessCpuUsage([]);
+      assert.rejects(() => {
+        return promises.getProcessCpuUsage([]);
       });
     });
   });
