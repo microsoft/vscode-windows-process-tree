@@ -35,6 +35,14 @@ extends:
             nodeVersions:
               - 16.x
 
+          - name: macOS
+            nodeVersions:
+              - 16.x
+
+          - name: Linux
+            nodeVersions:
+              - 16.x
+
         testSteps:
           - script: npm ci
             displayName: Install dependencies
