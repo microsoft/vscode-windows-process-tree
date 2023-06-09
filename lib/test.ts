@@ -440,4 +440,20 @@ if (isWindows) {
       });
     });
   });
+
+  describe('buildProcessTree', () => {
+    it('should not be implemented on Windows', () => {
+      assert.throws(() => {
+        buildProcessTree(process.pid, [], 0);
+      });
+    });
+  });
+
+  describe('filterProcessList', () => {
+    it('should not be implemented on Windows', () => {
+      assert.throws(() => {
+        filterProcessList(process.pid, [], 0);
+      });
+    });
+  });
 }
