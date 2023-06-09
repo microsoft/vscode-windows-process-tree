@@ -70,8 +70,7 @@ function buildRawTree(rootPid: number, processList: Iterable<IProcessInfo>): IPr
  */
 export function buildProcessTree(rootPid: number, processList: Iterable<IProcessInfo>, maxDepth: number = MAX_FILTER_DEPTH): IProcessTreeNode | undefined {
   if (process.platform !== 'win32') {
-    console.warn('buildProcessTree is only supported on Windows');
-    return undefined;
+    throw new Error('buildProcessTree is only implemented on Windows');
   }
   const root = buildRawTree(rootPid, processList);
   if (root === undefined) {
@@ -101,8 +100,7 @@ export function buildProcessTree(rootPid: number, processList: Iterable<IProcess
  */
 export function filterProcessList(rootPid: number, processList: Iterable<IProcessInfo>, maxDepth: number = MAX_FILTER_DEPTH): IProcessInfo[] | undefined {
   if (process.platform !== 'win32') {
-    console.warn('filterProcessList is only supported on Windows');
-    return undefined;
+    throw new Error('filterProcessList is only implemented on Windows');
   }
   const root = buildRawTree(rootPid, processList);
   if (root === undefined) {
@@ -163,8 +161,7 @@ function getRawProcessList(
  */
 export function getProcessList(rootPid: number, callback: (processList: IProcessInfo[] | undefined) => void, flags?: ProcessDataFlag): void {
   if (process.platform !== 'win32') {
-    console.warn('getProcessList is only supported on Windows');
-    return;
+    throw new Error('getProcessList is only implemented on Windows');
   }
   getRawProcessList(procs => callback(filterProcessList(rootPid, procs)), flags);
 }
@@ -186,8 +183,7 @@ export namespace getProcessList {
  */
 export function getProcessCpuUsage(processList: IProcessInfo[], callback: (tree: IProcessCpuInfo[]) => void): void {
   if (process.platform !== 'win32') {
-    console.warn('getProcessCpuUsage is only supported on Windows');
-    return;
+    throw new Error('getProcessCpuUsage is only implemented on Windows');
   }
   native.getProcessCpuUsage(processList, callback);
 }
@@ -212,8 +208,7 @@ export namespace getProcessCpuUsage {
  */
 export function getProcessTree(rootPid: number, callback: (tree: IProcessTreeNode | undefined) => void, flags?: ProcessDataFlag): void {
   if (process.platform !== 'win32') {
-    console.warn('getProcessTree is only supported on Windows');
-    return;
+    throw new Error('getProcessTree is only implemented on Windows');
   }
   getRawProcessList(procs => callback(buildProcessTree(rootPid, procs)), flags);
 }
