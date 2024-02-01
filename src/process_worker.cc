@@ -6,52 +6,45 @@
 #include "process_worker.h"
 
 GetProcessesWorker::GetProcessesWorker(
-    Nan::Callback* callback,
-    DWORD* process_data_flags) 
-      : AsyncWorker(callback),
-        process_data_flags(process_data_flags) {
-    process_info = new ProcessInfo[1024];
-    process_count = new uint32_t;
-}
+    Napi::Function& callback,
+    DWORD process_data_flags) 
+    : Napi::AsyncWorker(callback, "windows-process-tree:addon.HandleOKCallback"),
+      process_data_flags_(process_data_flags) {}
 
-GetProcessesWorker::~GetProcessesWorker() {
-  delete[] process_info;
-  delete process_count;
-  delete process_data_flags;
-}
+GetProcessesWorker::~GetProcessesWorker() = default;
 
 void GetProcessesWorker::Execute() {
-  GetRawProcessList(process_info, process_count, process_data_flags);
+  process_count_ = GetRawProcessList(process_info_, process_data_flags_);
 }
 
-void GetProcessesWorker::HandleOKCallback() {
-  Nan::HandleScope scope;
+void GetProcessesWorker::OnOK() {
+  Napi::HandleScope scope(Env());
+  Napi::Env env = Env();
   // Transfer results into actual result object
-  v8::Local<v8::Array> result = Nan::New<v8::Array>(*process_count);
-  for (uint32_t i = 0; i < *process_count; i++) {
-    v8::Local<v8::Object> object = Nan::New<v8::Object>();
-    Nan::Set(object, Nan::New<v8::String>("name").ToLocalChecked(),
-              Nan::New<v8::String>(process_info[i].name).ToLocalChecked());
-    Nan::Set(object, Nan::New<v8::String>("pid").ToLocalChecked(),
-              Nan::New<v8::Number>(process_info[i].pid));
-    Nan::Set(object, Nan::New<v8::String>("ppid").ToLocalChecked(),
-              Nan::New<v8::Number>(process_info[i].ppid));
+  Napi::Array result = Napi::Array::New(env, process_count_);
+  for (uint32_t i = 0; i < process_count_; i++) {
+    const ProcessInfo& pinfo = process_info_[i];
+    Napi::Object object = Napi::Object::New(env);
+    object.Set("name",
+               Napi::String::New(env, pinfo.name));
+    object.Set("pid",
+               Napi::Number::New(env, pinfo.pid));
+    object.Set("ppid",
+               Napi::Number::New(env, pinfo.ppid));
 
     // Property should be undefined when memory flag isn't set
-    if (MEMORY & *process_data_flags) {
-      Nan::Set(object, Nan::New<v8::String>("memory").ToLocalChecked(),
-              Nan::New<v8::Number>(process_info[i].memory));
+    if (MEMORY & process_data_flags_) {
+      object.Set("memory",
+                 Napi::Number::New(env, pinfo.memory));
     }
 
-    if (COMMANDLINE & *process_data_flags) {
-      Nan::Set(object, Nan::New<v8::String>("commandLine").ToLocalChecked(),
-        Nan::New<v8::String>(process_info[i].commandLine).ToLocalChecked());
+    if (COMMANDLINE & process_data_flags_) {
+      object.Set("commandLine",
+          Napi::String::New(env, pinfo.commandLine));
     }
 
-    Nan::Set(result, i, Nan::New<v8::Value>(object));
+    result.Set(i, object);
   }
 
-  v8::Local<v8::Value> argv[] = { result };
-  Nan::AsyncResource resource("windows-process-tree:addon.HandleOKCallback");
-  callback->Call(1, argv, &resource);
+  Callback().Call({result});
 }

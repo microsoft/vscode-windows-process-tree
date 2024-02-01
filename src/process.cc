@@ -10,39 +10,42 @@
 #include <psapi.h>
 #include <limits>
 
-void GetRawProcessList(ProcessInfo process_info[1024], uint32_t* process_count, DWORD* process_data_flags) {
-  *process_count = 0;
-
+uint32_t GetRawProcessList(std::vector<ProcessInfo>& process_info,
+                           DWORD process_data_flags) {
   // Fetch the PID and PPIDs
   PROCESSENTRY32 process_entry = { 0 };
   DWORD parent_pid = 0;
+  uint32_t process_count = 0;
   HANDLE snapshot_handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   process_entry.dwSize = sizeof(PROCESSENTRY32);
   if (Process32First(snapshot_handle, &process_entry)) {
     do {
       if (process_entry.th32ProcessID != 0) {
-        process_info[*process_count].pid = process_entry.th32ProcessID;
-        process_info[*process_count].ppid = process_entry.th32ParentProcessID;
+        ProcessInfo pinfo;
+        pinfo.pid = process_entry.th32ProcessID;
+        pinfo.ppid = process_entry.th32ParentProcessID;
 
-        if (MEMORY & *process_data_flags) {
-          GetProcessMemoryUsage(process_info, process_count);
+        if (MEMORY & process_data_flags) {
+          GetProcessMemoryUsage(pinfo);
         }
 
-        if (COMMANDLINE & *process_data_flags) {
-          GetProcessCommandLine(process_info, process_count);
+        if (COMMANDLINE & process_data_flags) {
+          GetProcessCommandLine(pinfo);
         }
 
-        strcpy(process_info[*process_count].name, process_entry.szExeFile);
-        (*process_count)++;
+        strcpy(pinfo.name, process_entry.szExeFile);
+        process_info.push_back(std::move(pinfo));
+        process_count++;
       }
-    } while (*process_count < 1024 && Process32Next(snapshot_handle, &process_entry));
+    } while (process_count < 1024 && Process32Next(snapshot_handle, &process_entry));
   }
 
   CloseHandle(snapshot_handle);
+  return process_count;
 }
 
-void GetProcessMemoryUsage(ProcessInfo process_info[1024], uint32_t* process_count) {
-  DWORD pid = process_info[*process_count].pid;
+void GetProcessMemoryUsage(ProcessInfo& process_info) {
+  DWORD pid = process_info.pid;
   HANDLE hProcess;
   PROCESS_MEMORY_COUNTERS pmc;
 
@@ -53,7 +56,7 @@ void GetProcessMemoryUsage(ProcessInfo process_info[1024], uint32_t* process_cou
   }
 
   if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc))) {
-    process_info[*process_count].memory = (DWORD)pmc.WorkingSetSize;
+    process_info.memory = (DWORD)pmc.WorkingSetSize;
   }
 
   CloseHandle(hProcess);
@@ -74,8 +77,8 @@ ULONGLONG GetTotalTime(const FILETIME* kernelTime, const FILETIME* userTime) {
   return kt.QuadPart + ut.QuadPart;
 }
 
-void GetCpuUsage(Cpu* cpu_info, uint32_t* process_index, BOOL first_pass) {
-  DWORD pid = cpu_info[*process_index].pid;
+void GetCpuUsage(Cpu& cpu_info, bool first_pass) {
+  DWORD pid = cpu_info.pid;
   HANDLE hProcess;
 
   hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid);
@@ -89,16 +92,16 @@ void GetCpuUsage(Cpu* cpu_info, uint32_t* process_index, BOOL first_pass) {
   if (GetProcessTimes(hProcess, &creationTime, &exitTime, &kernelTime, &userTime)
     && GetSystemTimes(&sysIdleTime, &sysKernelTime, &sysUserTime)) {
     if (first_pass) {
-      cpu_info[*process_index].initialProcRunTime = GetTotalTime(&kernelTime, &userTime);
-      cpu_info[*process_index].initialSystemTime = GetTotalTime(&sysKernelTime, &sysUserTime);
+      cpu_info.initialProcRunTime = GetTotalTime(&kernelTime, &userTime);
+      cpu_info.initialSystemTime = GetTotalTime(&sysKernelTime, &sysUserTime);
     } else {
       ULONGLONG endProcTime = GetTotalTime(&kernelTime, &userTime);
       ULONGLONG endSysTime = GetTotalTime(&sysKernelTime, &sysUserTime);
 
-      cpu_info[*process_index].cpu = 100.0 * (endProcTime - cpu_info[*process_index].initialProcRunTime) / (endSysTime - cpu_info[*process_index].initialSystemTime);
+      cpu_info.cpu = 100.0 * (endProcTime - cpu_info.initialProcRunTime) / (endSysTime - cpu_info.initialSystemTime);
     }
   } else {
-    cpu_info[*process_index].cpu = std::numeric_limits<double>::quiet_NaN();
+    cpu_info.cpu = std::numeric_limits<double>::quiet_NaN();
   }
 
   CloseHandle(hProcess);

@@ -6,21 +6,22 @@
 #ifndef SRC_PROCESS_WORKER_H
 #define SRC_PROCESS_WORKER_H
 
-#include <nan.h>
+#include <napi.h>
 #include "process.h"
 
-class GetProcessesWorker : public Nan::AsyncWorker {
+class GetProcessesWorker : public Napi::AsyncWorker {
  public:
-  GetProcessesWorker(Nan::Callback* callback, DWORD* process_data_flags);
+  GetProcessesWorker(Napi::Function& callback,
+                     DWORD process_data_flags);
   ~GetProcessesWorker();
 
-  void Execute();
-  void HandleOKCallback();
- private:
-  ProcessInfo* process_info;
-  uint32_t* process_count;
-  DWORD* process_data_flags;
+  void Execute() override;
+  void OnOK() override;
 
+ private:
+  std::vector<ProcessInfo> process_info_;
+  uint32_t process_count_ = 0;
+  DWORD process_data_flags_;
 };
 
 #endif  // SRC_PROCESS_WORKER_H

@@ -7,68 +7,55 @@
 #include "process_commandline.h"
 #include <windows.h>
 #include <winternl.h>
-#include <psapi.h>
+#include <iostream>
 
-bool GetProcessCommandLine(ProcessInfo process_info[1024], uint32_t *process_count) {
-  pfnNtQueryInformationProcess gNtQueryInformationProcess = (pfnNtQueryInformationProcess)GetProcAddress(
-      GetModuleHandleA("ntdll.dll"), "NtQueryInformationProcess");
+bool GetProcessCommandLine(ProcessInfo& process_info) {
+  HINSTANCE ntdll = GetModuleHandleW(L"ntdll.dll");
+  if (!ntdll) {
+    return false;
+  }
 
-  PPROCESS_BASIC_INFORMATION pbi = NULL;
+  decltype(NtQueryInformationProcess)* nt_query_information_process =
+      reinterpret_cast<decltype(NtQueryInformationProcess)*>(
+          GetProcAddress(ntdll, "NtQueryInformationProcess"));
+
+  if (!nt_query_information_process) {
+    return false;
+  }
+
+  PROCESS_BASIC_INFORMATION pbi{};
   PEB peb = {NULL};
   RTL_USER_PROCESS_PARAMETERS process_parameters = {NULL};
 
   // Get process handle
-  DWORD pid = process_info[*process_count].pid;
+  DWORD pid = process_info.pid;
   HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
   if (hProcess == INVALID_HANDLE_VALUE) {
-    return FALSE;
-  }
-
-  // Get process basic information
-  HANDLE heap = GetProcessHeap();
-  DWORD pbi_size = sizeof(PROCESS_BASIC_INFORMATION);
-  pbi = (PROCESS_BASIC_INFORMATION *)HeapAlloc(heap, HEAP_ZERO_MEMORY, pbi_size);
-  if (!pbi) {
-    CloseHandle(hProcess);
-    return FALSE;
+    return false;
   }
 
   // Get Process Environment Block (PEB)
-  DWORD size_needed;
-  NTSTATUS status = gNtQueryInformationProcess(hProcess, ProcessBasicInformation, pbi, pbi_size, &size_needed);
-  if (status >= 0 && pbi->PebBaseAddress) {
-
+  NTSTATUS status = nt_query_information_process(hProcess, ProcessBasicInformation, &pbi, sizeof(pbi), nullptr);
+  if (NT_SUCCESS(status) && pbi.PebBaseAddress) {
     // Read PEB
-    SIZE_T bytes_read;
-    if (ReadProcessMemory(hProcess, pbi->PebBaseAddress, &peb, sizeof(peb), &bytes_read)) {
-
+    if (ReadProcessMemory(hProcess, pbi.PebBaseAddress, &peb, sizeof(peb), nullptr)) {
       // Read the processs parameters
-      bytes_read = 0;
-      if (ReadProcessMemory(hProcess, peb.ProcessParameters, &process_parameters, sizeof(RTL_USER_PROCESS_PARAMETERS), &bytes_read)) {
+      if (ReadProcessMemory(hProcess, peb.ProcessParameters, &process_parameters, sizeof(RTL_USER_PROCESS_PARAMETERS), nullptr)) {
         if (process_parameters.CommandLine.Length > 0) {
-
-          // Allocate space to read the command line parameter
-          WCHAR *buffer = NULL;
-          buffer = (WCHAR *)HeapAlloc(heap, HEAP_ZERO_MEMORY, process_parameters.CommandLine.Length);
-          if (buffer) {
-            if (ReadProcessMemory(hProcess, process_parameters.CommandLine.Buffer, buffer, process_parameters.CommandLine.Length, &bytes_read)) {
-
-              // Copy only as much as will fit in the commandLine property
-              DWORD buffer_size = process_parameters.CommandLine.Length >= sizeof(process_info[*process_count].commandLine)
-                                     ? sizeof(process_info[*process_count].commandLine) - sizeof(TCHAR)
-                                     : process_parameters.CommandLine.Length;
-
-              WideCharToMultiByte(CP_ACP, 0, buffer,
-                                  (int)(buffer_size / sizeof(WCHAR)),
-                                  process_info[*process_count].commandLine, sizeof(process_info[*process_count].commandLine),
+          std::wstring buffer;
+          buffer.resize(process_parameters.CommandLine.Length / sizeof(wchar_t));
+          if (ReadProcessMemory(hProcess, process_parameters.CommandLine.Buffer, &buffer[0], process_parameters.CommandLine.Length, nullptr)) {
+            int wide_length = static_cast<int>(buffer.length());
+            int charcount = WideCharToMultiByte(CP_ACP, 0, buffer.data(), wide_length,
+                                      NULL, 0, NULL, NULL);
+            if (charcount) {
+              process_info.commandLine.resize(static_cast<size_t>(charcount));
+              WideCharToMultiByte(CP_ACP, 0, buffer.data(), wide_length,
+                                  &process_info.commandLine[0], charcount,
                                   NULL, NULL);
-
-              HeapFree(heap, 0, buffer);
-              CloseHandle(hProcess);
-              HeapFree(heap, 0, pbi);
-              return true;
             }
-            HeapFree(heap, 0, buffer);
+            CloseHandle(hProcess);
+            return true;
           }
         }
       }
@@ -76,6 +63,5 @@ bool GetProcessCommandLine(ProcessInfo process_info[1024], uint32_t *process_cou
   }
 
   CloseHandle(hProcess);
-  HeapFree(heap, 0, pbi);
   return false;
 }

@@ -6,19 +6,22 @@
 #ifndef SRC_CPU_WORKER_H
 #define SRC_CPU_WORKER_H
 
-#include <nan.h>
+#include <napi.h>
 #include "process.h"
 
-class GetCPUWorker : public Nan::AsyncWorker {
+class GetCPUWorker : public Napi::AsyncWorker {
  public:
-  GetCPUWorker(Nan::Callback* callback, v8::Local<v8::Array> &processes);
+  GetCPUWorker(Napi::Function& callback,
+               Napi::Array& processes);
   ~GetCPUWorker();
 
-  void Execute();
-  void HandleOKCallback();
+  void Execute() override;
+  void OnOK() override;
+
  private:
-  Cpu* cpu_info;
-  uint32_t process_count;
+  Napi::Reference<Napi::Array> processes_ref_;
+  std::vector<Cpu> cpu_info_;
+  uint32_t process_count_;
 };
 
 #endif  // SRC_CPU_WORKER_H

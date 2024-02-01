@@ -16,6 +16,6 @@ typedef NTSTATUS(NTAPI *pfnNtQueryInformationProcess)(
   IN ULONG ProcessInformationLength,
   OUT PULONG ReturnLength OPTIONAL);
 
-bool GetProcessCommandLine(ProcessInfo process_info[1024], uint32_t *process_count);
+bool GetProcessCommandLine(ProcessInfo& process_info);
 
 #endif

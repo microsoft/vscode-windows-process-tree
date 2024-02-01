@@ -3,59 +3,57 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-#include <nan.h>
+#include <napi.h>
 #include "cpu_worker.h"
 #include "process_worker.h"
 
-void GetProcessList(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+void GetProcessList(const Napi::CallbackInfo& args) {
+  Napi::Env env(args.Env());
+
   if (args.Length() < 2) {
-    Nan::ThrowTypeError("GetProcessList expects two arguments.");
-    return;
+    throw Napi::TypeError::New(env, "GetProcessList expects two arguments.");
   }
 
-  if (!args[0]->IsFunction()) {
-    Nan::ThrowTypeError("The first argument of GetProcessList, callback, must be a function.");
-    return;
+  if (!args[0].IsFunction()) {
+    throw Napi::TypeError::New(env, "The first argument of GetProcessList, callback, must be a function.");
   }
 
-  if (!args[1]->IsNumber()) {
-    Nan::ThrowTypeError("The second argument of GetProcessList, flags, must be a number.");
-    return;
+  if (!args[1].IsNumber()) {
+    throw Napi::TypeError::New(env, "The second argument of GetProcessList, flags, must be a number.");
   }
 
-  Nan::Callback *callback = new Nan::Callback(v8::Local<v8::Function>::Cast(args[0]));
-  DWORD* flags = new DWORD;
-  *flags = (DWORD)(Nan::To<int32_t>(args[1]).FromJust());
-  GetProcessesWorker *worker = new GetProcessesWorker(callback, flags);
-  Nan::AsyncQueueWorker(worker);
+  Napi::Function callback = args[0].As<Napi::Function>();
+  DWORD flags = static_cast<DWORD>(args[1].As<Napi::Number>().Int32Value());
+  auto* worker = new GetProcessesWorker(callback, flags);
+  worker->Queue();
 }
 
-void GetProcessCpuUsage(const Nan::FunctionCallbackInfo<v8::Value>& args) {
+void GetProcessCpuUsage(const Napi::CallbackInfo& args) {
+  Napi::Env env(args.Env());
+
   if (args.Length() < 2) {
-      Nan::ThrowTypeError("GetProcessCpuUsage expects two arguments.");
-      return;
+    throw Napi::TypeError::New(env, "GetProcessCpuUsage expects two arguments.");
   }
 
-  if (!args[0]->IsArray()) {
-    Nan::ThrowTypeError("The first argument of GetProcessCpuUsage, processList, must be an array.");
-    return;
+  if (!args[0].IsArray()) {
+    throw Napi::TypeError::New(env, "The first argument of GetProcessCpuUsage, processList, must be an array.");
   }
 
-  if (!args[1]->IsFunction()) {
-    Nan::ThrowTypeError("The second argument of GetProcessCpuUsage, callback, must be a function.");
-    return;
+  if (!args[1].IsFunction()) {
+    throw Napi::TypeError::New(env, "The second argument of GetProcessCpuUsage, callback, must be a function.");
   }
 
   // Read the ProcessTreeNode JS object
-  v8::Local<v8::Array> processes = v8::Local<v8::Array>::Cast(args[0]);
-  Nan::Callback *callback = new Nan::Callback(v8::Local<v8::Function>::Cast(args[1]));
-  GetCPUWorker *worker = new GetCPUWorker(callback, processes);
-  Nan::AsyncQueueWorker(worker);
+  Napi::Array processes = args[0].As<Napi::Array>();
+  Napi::Function callback = args[1].As<Napi::Function>();
+  auto* worker = new GetCPUWorker(callback, processes);
+  worker->Queue();
 }
 
-void Init(v8::Local<v8::Object> exports) {
-  Nan::Export(exports, "getProcessList", GetProcessList);
-  Nan::Export(exports, "getProcessCpuUsage", GetProcessCpuUsage);
+Napi::Object Init(Napi::Env env, Napi::Object exports) {
+  exports.Set("getProcessList", Napi::Function::New(env, GetProcessList));
+  exports.Set("getProcessCpuUsage", Napi::Function::New(env, GetProcessCpuUsage));
+  return exports;
 }
 
-NAN_MODULE_WORKER_ENABLED(hello, Init)
+NODE_API_MODULE(WindowsProcessTree, Init)

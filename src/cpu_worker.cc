@@ -7,70 +7,57 @@
 #include <cmath>
 
 GetCPUWorker::GetCPUWorker(
-  Nan::Callback* callback,
-  v8::Local<v8::Array> &processes)
-      : AsyncWorker(callback) {
+    Napi::Function& callback,
+    Napi::Array& processes)
+    : AsyncWorker(callback, "windows-process-tree:cpuworker.OnOK") {
+  for (uint32_t i = 0; i < processes.Length(); i++) {
+    Cpu cpu_info;
+    Napi::Object process = processes.Get(i).As<Napi::Object>();
+    if (process.Has("pid")) {
+      Napi::Value pid = process.Get("pid");
+      cpu_info.pid = static_cast<DWORD>(pid.As<Napi::Number>().Int32Value());
+    }
+    cpu_info_.push_back(std::move(cpu_info));
+  }
+  process_count_ = processes.Length();
   // Processes is persisted so it can be copied out, but the value is not accessible
   // within Execute, so copy all pids into cpu info object
-  SaveToPersistent("processes", processes);
-  process_count = processes->Length();
-  cpu_info = new Cpu[process_count];
-
-  for (uint32_t i = 0; i < process_count; i++) {
-    v8::Local<v8::Value> process;
-    v8::MaybeLocal<v8::Value> maybe_process = Nan::Get(processes, Nan::New<v8::Integer>(i));
-    if (maybe_process.ToLocal(&process)) {
-      v8::Local<v8::Value> pid;
-      v8::MaybeLocal<v8::Value> maybe_pid = Nan::Get(Nan::To<v8::Object>(process).ToLocalChecked(), Nan::New("pid").ToLocalChecked());
-      if (maybe_pid.ToLocal(&pid)) {
-        cpu_info[i].pid = (DWORD)(Nan::To<int32_t>(pid).FromJust());
-      }
-    }
-  }
+  processes_ref_ = Napi::Persistent(processes);
 }
 
-GetCPUWorker::~GetCPUWorker() {
-  delete[] cpu_info;
-}
+GetCPUWorker::~GetCPUWorker() = default;
 
 void GetCPUWorker::Execute() {
 // Take first sample of counters
-  for (uint32_t i = 0; i < process_count; i++) {
-    GetCpuUsage(cpu_info, &i, true);
+  for (uint32_t i = 0; i < process_count_; i++) {
+    GetCpuUsage(cpu_info_[i], true);
   }
 
   // Sleep for one second
   Sleep(1000);
 
   // Sample counters again and complete CPU usage calculation
-  for (uint32_t i = 0; i < process_count; i++) {
-    GetCpuUsage(cpu_info, &i, false);
+  for (uint32_t i = 0; i < process_count_; i++) {
+    GetCpuUsage(cpu_info_[i], false);
   }
 }
 
-void GetCPUWorker::HandleOKCallback() {
-  Nan::HandleScope scope;
-  v8::Local<v8::Array> process_array = v8::Local<v8::Array>::Cast(GetFromPersistent("processes"));
-  uint32_t count = process_array->Length();
+void GetCPUWorker::OnOK() {
+  Napi::HandleScope scope(Env());
+  Napi::Env env = Env();
+  Napi::Array processes = processes_ref_.Value();
   // Transfer results into actual result object
-  v8::Local<v8::Array> result = Nan::New<v8::Array>(count);
-  for (uint32_t i = 0; i < count; i++) {
-    v8::Local<v8::Value> process;
-    v8::MaybeLocal<v8::Value> maybe_process = Nan::Get(process_array, Nan::New<v8::Integer>(i));
-    if (!maybe_process.ToLocal(&process))
-      continue;
-
-    v8::Local<v8::Object> object = Nan::To<v8::Object>(process).ToLocalChecked();
-
-    if (!std::isnan(cpu_info[i].cpu)) {
-      Nan::Set(object, Nan::New<v8::String>("cpu").ToLocalChecked(),
-                Nan::New<v8::Number>(cpu_info[i].cpu));
+  Napi::Array result = Napi::Array::New(env, processes.Length());
+  for (uint32_t i = 0; i < processes.Length(); i++) {
+    Cpu cpu_info = cpu_info_[i];
+    Napi::Object process = processes.Get(i).As<Napi::Object>();
+    if (!std::isnan(cpu_info.cpu)) {
+      process.Set("cpu",
+                 Napi::Number::New(env, cpu_info.cpu));
     }
 
-    Nan::Set(result, i, Nan::New<v8::Value>(object));
+    result.Set(i, process);
   }
 
-  v8::Local<v8::Value> argv[] = { result };
-  Nan::AsyncResource resource("windows-process-tree:addon.HandleOKCallback");
-  callback->Call(1, argv, &resource);
+  Callback().Call({result});
 }
