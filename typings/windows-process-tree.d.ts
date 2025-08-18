@@ -7,7 +7,8 @@ declare module '@vscode/windows-process-tree' {
   export enum ProcessDataFlag {
     None = 0,
     Memory = 1,
-    CommandLine = 2
+    CommandLine = 2,
+    Owner = 4
   }
 
   export interface IProcessInfo {
@@ -24,6 +25,8 @@ declare module '@vscode/windows-process-tree' {
      * The string returned is at most 512 chars, strings exceeding this length are truncated.
      */
     commandLine?: string;
+
+    owner?: string; 
   }
 
   export interface IProcessCpuInfo extends IProcessInfo {
@@ -35,6 +38,7 @@ declare module '@vscode/windows-process-tree' {
     name: string;
     memory?: number;
     commandLine?: string;
+    owner?: string;
     children: IProcessTreeNode[];
   }
 
@@ -71,5 +75,19 @@ declare module '@vscode/windows-process-tree' {
 
   namespace getProcessCpuUsage {
     function __promisify__(processList: IProcessInfo[]): Promise<IProcessCpuInfo[]>;
+  }
+
+  /**
+ * Returns a flat, system-wide list of processes.
+ * @param callback - The callback to use with the returned list of processes.
+ * @param flags - The flags for what process data should be included.
+ */
+  export function getSystemProcessList(
+    callback: (processList: IProcessInfo[]) => void,
+    flags?: ProcessDataFlag
+  ): void;
+
+  namespace getSystemProcessList {
+    function __promisify__(flags?: ProcessDataFlag): Promise<IProcessInfo[]>;
   }
 }

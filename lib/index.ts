@@ -11,7 +11,8 @@ import { IProcessInfo, IProcessTreeNode, IProcessCpuInfo } from '@vscode/windows
 export enum ProcessDataFlag {
   None = 0,
   Memory = 1,
-  CommandLine = 2
+  CommandLine = 2,
+  Owner = 4
 }
 
 type RequestCallback = (processList: IProcessInfo[]) => void;
@@ -81,11 +82,12 @@ export function buildProcessTree(rootPid: number, processList: Iterable<IProcess
   // • the properties are inlined/splatted
   // • the 'ppid' field is omitted
   // • the depth of the tree is limited by `maxDepth`
-  const buildNode = ({ info: { pid, name, memory, commandLine }, children }: IProcessInfoNode, depth: number): IProcessTreeNode => ({
+  const buildNode = ({ info: { pid, name, memory, commandLine, owner }, children }: IProcessInfoNode, depth: number): IProcessTreeNode => ({
     pid,
     name,
     memory,
     commandLine,
+    owner,
     children: depth > 0 ? children.map(c => buildNode(c, depth - 1)) : [],
   });
 
@@ -222,8 +224,23 @@ export namespace getProcessTree {
     getProcessTree(rootPid, callback, flags);
   });
 }
+export function getSystemProcessList(
+  callback: (processList: IProcessInfo[]) => void,
+  flags?: ProcessDataFlag
+): void {
+  if (process.platform !== 'win32') {
+    throw new Error('getSystemProcessList is only implemented on Windows');
+  }
+  getRawProcessList(callback, flags);
+}
 
+export namespace getSystemProcessList {
+  export const __promisify__ = (flags?: ProcessDataFlag): Promise<IProcessInfo[]> =>
+    new Promise((resolve, reject) => {
+      getSystemProcessList(list => list ? resolve(list) : reject(new Error('System enumeration failed')), flags);
+    });
+}
 // Since symbol properties can't be declared via namespace merging, we just define __promisify__ that way and
 // and manually set the "modern" promisify symbol: https://github.com/microsoft/TypeScript/issues/36813
-[getProcessTree, getProcessList, getProcessCpuUsage].forEach(func =>
+[getProcessTree, getProcessList, getProcessCpuUsage, getSystemProcessList].forEach(func =>
   Object.defineProperty(func, promisify.custom, { enumerable: false, value: func.__promisify__ }));

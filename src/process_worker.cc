@@ -42,6 +42,9 @@ void GetProcessesWorker::OnOK() {
       object.Set("commandLine",
           Napi::String::New(env, pinfo.commandLine));
     }
+    if ((OWNER & process_data_flags_) && !pinfo.owner.empty()) {
+      object.Set("owner", Napi::String::New(env, pinfo.owner));
+    }
 
     result.Set(i, object);
   }
