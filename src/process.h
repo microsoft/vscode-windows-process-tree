@@ -22,12 +22,14 @@ struct ProcessInfo {
   DWORD ppid;
   DWORD memory; // Reported in bytes
   std::string commandLine;
+  std::string owner; 
 };
 
 enum ProcessDataFlags {
   NONE = 0,
   MEMORY = 1,
-  COMMANDLINE = 2
+  COMMANDLINE = 2,
+  OWNER = 4
 };
 
 uint32_t GetRawProcessList(std::vector<ProcessInfo>& process_info, DWORD flags);
