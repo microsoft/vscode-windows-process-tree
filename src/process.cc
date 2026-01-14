@@ -5,6 +5,7 @@
 
 #include "process.h"
 #include "process_commandline.h"
+#include "process_owner.h"
 
 #include <tlhelp32.h>
 #include <psapi.h>
@@ -32,7 +33,10 @@ uint32_t GetRawProcessList(std::vector<ProcessInfo>& process_info,
         if (COMMANDLINE & process_data_flags) {
           GetProcessCommandLine(pinfo);
         }
-
+        
+        if (OWNER & process_data_flags) {
+          GetProcessOwner(pinfo);
+        }
         strcpy(pinfo.name, process_entry.szExeFile);
         process_info.push_back(std::move(pinfo));
         process_count++;
