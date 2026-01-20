@@ -72,4 +72,15 @@ declare module '@vscode/windows-process-tree' {
   namespace getProcessCpuUsage {
     function __promisify__(processList: IProcessInfo[]): Promise<IProcessCpuInfo[]>;
   }
+
+  /**
+   * Returns a list of all processes on the system.
+   * @param callback - The callback to use with the returned set of processes.
+   * @param flags - The flags for what process data should be included.
+   */
+  export function getAllProcesses(callback: (processList: IProcessInfo[]) => void, flags?: ProcessDataFlag): void;
+
+  namespace getAllProcesses {
+    function __promisify__(flags?: ProcessDataFlag): Promise<IProcessInfo[]>;
+  }
 }
