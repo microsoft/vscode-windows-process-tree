@@ -27,6 +27,39 @@ function pollUntil(makePromise: () => Promise<boolean>, cb: () => void, interval
 if (isWindows) {
   const native = require('../build/Release/windows_process_tree.node');
 
+  describe('getAllProcesses', () => {
+    it('should return a list containing this process', (done) => {
+      native.getProcessList((list) => {
+        assert.notStrictEqual(list?.find(p => p.pid === process.pid), undefined);
+        done();
+      }, 0);
+    });
+
+    it('should work via API', (done) => {
+      const { getAllProcesses } = require('./index');
+      getAllProcesses((list) => {
+        assert.ok(Array.isArray(list));
+        assert.notStrictEqual(list.find(p => p.pid === process.pid), undefined);
+        done();
+      });
+    });
+
+    it('should work promisified', async () => {
+      const list = await promises.getAllProcesses();
+      assert.ok(Array.isArray(list));
+      assert.notStrictEqual(list.find(p => p.pid === process.pid), undefined);
+    });
+
+    it('should return memory information only when the flag is set', async () => {
+      const list = await promises.getAllProcesses(ProcessDataFlag.Memory);
+      assert.ok(list.some(p => typeof p.memory === 'number'));
+    });
+
+    it('should return command line information only when the flag is set', async () => {
+      const list = await promises.getAllProcesses(ProcessDataFlag.CommandLine);
+      assert.ok(list.every(p => typeof p.commandLine === 'string'));
+    });
+  });
   describe('getRawProcessList', () => {
     it('should throw if arguments are not provided', (done) => {
       assert.throws(() => native.getProcessList());
