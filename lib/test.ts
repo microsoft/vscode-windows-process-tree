@@ -28,7 +28,7 @@ if (isWindows) {
   const native = require('../build/Release/windows_process_tree.node');
 
   describe('getAllProcesses', () => {
-    it('should return a list containing this process', (done) => {
+    it('should return a list containing this process via native API', (done) => {
       native.getProcessList((list) => {
         assert.notStrictEqual(list?.find(p => p.pid === process.pid), undefined);
         done();

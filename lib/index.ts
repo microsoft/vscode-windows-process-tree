@@ -244,5 +244,5 @@ export namespace getAllProcesses {
 
 // Since symbol properties can't be declared via namespace merging, we just define __promisify__ that way and
 // and manually set the "modern" promisify symbol: https://github.com/microsoft/TypeScript/issues/36813
-[getProcessTree, getProcessList, getProcessCpuUsage,getAllProcesses].forEach(func =>
+[getProcessTree, getProcessList, getProcessCpuUsage, getAllProcesses].forEach(func =>
   Object.defineProperty(func, promisify.custom, { enumerable: false, value: func.__promisify__ }));
