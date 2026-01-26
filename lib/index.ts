@@ -223,7 +223,26 @@ export namespace getProcessTree {
   });
 }
 
+/**
+ * Returns a list of all processes on the system
+ * @param callback The callback to use with the returned set of processes
+ * @param flags The flags for what process data should be included
+ */
+export function getAllProcesses(callback: (processList: IProcessInfo[]) => void, flags?: ProcessDataFlag): void {
+  if (process.platform !== 'win32') {
+    throw new Error('getAllProcesses is only implemented on Windows');
+  }
+  getRawProcessList(callback, flags);
+}
+
+export namespace getAllProcesses {
+  // tslint:disable-next-line:variable-name
+  export const __promisify__ = (flags?: ProcessDataFlag): Promise<IProcessInfo[]> => new Promise((resolve, reject) => {
+    getAllProcesses((processList) => resolve(processList), flags);
+  });
+}
+
 // Since symbol properties can't be declared via namespace merging, we just define __promisify__ that way and
 // and manually set the "modern" promisify symbol: https://github.com/microsoft/TypeScript/issues/36813
-[getProcessTree, getProcessList, getProcessCpuUsage].forEach(func =>
+[getProcessTree, getProcessList, getProcessCpuUsage, getAllProcesses].forEach(func =>
   Object.defineProperty(func, promisify.custom, { enumerable: false, value: func.__promisify__ }));
