@@ -37,4 +37,10 @@ declare module '@vscode/windows-process-tree/promises' {
    * @param processList - The list of processes.
    */
   export function getProcessCpuUsage(processList: IProcessInfo[]): Promise<IProcessCpuInfo[]>;
+
+   /**
+   * Returns a list of all processes on the system.
+   * @param flags - The flags for what process data should be included.
+   */
+  export function getAllProcesses(flags?: ProcessDataFlag): Promise<IProcessInfo[]>;
 }

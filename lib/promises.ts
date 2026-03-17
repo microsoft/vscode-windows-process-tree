@@ -12,3 +12,4 @@ export { ProcessDataFlag } from './index';
 export const getProcessTree = promisify(wpc.getProcessTree);
 export const getProcessList = promisify(wpc.getProcessList);
 export const getProcessCpuUsage = promisify(wpc.getProcessCpuUsage);
+export const getAllProcesses = promisify(wpc.getAllProcesses);
