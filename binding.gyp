@@ -15,7 +15,7 @@
             "src/process_commandline.cc"
           ],
           "include_dirs": [],
-          "libraries": [ 'psapi.lib' ],
+          "libraries": [ '-lpsapi.lib' ],
           "msvs_configuration_attributes": {
             "SpectreMitigation": "Spectre"
           },
