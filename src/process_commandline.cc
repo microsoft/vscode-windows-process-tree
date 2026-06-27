@@ -46,11 +46,11 @@ bool GetProcessCommandLine(ProcessInfo& process_info) {
           buffer.resize(process_parameters.CommandLine.Length / sizeof(wchar_t));
           if (ReadProcessMemory(hProcess, process_parameters.CommandLine.Buffer, &buffer[0], process_parameters.CommandLine.Length, nullptr)) {
             int wide_length = static_cast<int>(buffer.length());
-            int charcount = WideCharToMultiByte(CP_ACP, 0, buffer.data(), wide_length,
+            int charcount = WideCharToMultiByte(CP_UTF8, 0, buffer.data(), wide_length,
                                       NULL, 0, NULL, NULL);
             if (charcount) {
               process_info.commandLine.resize(static_cast<size_t>(charcount));
-              WideCharToMultiByte(CP_ACP, 0, buffer.data(), wide_length,
+              WideCharToMultiByte(CP_UTF8, 0, buffer.data(), wide_length,
                                   &process_info.commandLine[0], charcount,
                                   NULL, NULL);
             }
