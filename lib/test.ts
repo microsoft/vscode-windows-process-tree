@@ -178,6 +178,41 @@ if (isWindows) {
       }, ProcessDataFlag.CommandLine);
     });
 
+    it('should preserve Unicode characters in command line', async () => {
+      const marker = 'Türkçe-Привет-你好';
+      const child = child_process.spawn(
+        process.execPath,
+        ['-e', 'setInterval(() => {}, 10000)', marker],
+        { windowsHide: true }
+      );
+      cps.push(child);
+
+      assert.ok(child.pid, 'Failed to start the test process');
+      const childPid = child.pid;
+
+      await new Promise<void>((resolve, reject) => {
+        const deadline = Date.now() + 2000;
+
+        const poll = () => {
+          getProcessList(childPid, (list) => {
+            if (list?.some(processInfo => processInfo.pid === childPid && processInfo.commandLine?.includes(marker))) {
+              resolve();
+              return;
+            }
+
+            if (Date.now() >= deadline) {
+              reject(new Error(`Timed out waiting for Unicode command line marker: ${marker}`));
+              return;
+            }
+
+            setTimeout(poll, 20);
+          }, ProcessDataFlag.CommandLine);
+        };
+
+        poll();
+      });
+    });
+
     it('should return a list containing this process\'s child processes', done => {
       cps.push(child_process.spawn('cmd.exe'));
       pollUntil(() => {
