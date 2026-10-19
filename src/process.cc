@@ -37,7 +37,7 @@ uint32_t GetRawProcessList(std::vector<ProcessInfo>& process_info,
         process_info.push_back(std::move(pinfo));
         process_count++;
       }
-    } while (process_count < 1024 && Process32Next(snapshot_handle, &process_entry));
+    } while (Process32Next(snapshot_handle, &process_entry));
   }
 
   CloseHandle(snapshot_handle);
