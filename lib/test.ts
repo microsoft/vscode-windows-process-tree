@@ -5,8 +5,10 @@
 
 import * as assert from 'assert';
 import * as child_process from 'child_process';
+import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
-import { getProcessTree, getProcessList, getProcessCpuUsage, ProcessDataFlag, buildProcessTree, filterProcessList } from './index';
+import { getProcessTree, getProcessList, getProcessCpuUsage, getCurrentProcessUserSid, setOwnerOnlyAcl, ProcessDataFlag, buildProcessTree, filterProcessList } from './index';
 import { Worker, isMainThread } from 'worker_threads';
 import { IProcessCpuInfo, IProcessInfo, IProcessTreeNode } from '@vscode/windows-process-tree';
 import * as promises from './promises';
@@ -26,6 +28,154 @@ function pollUntil(makePromise: () => Promise<boolean>, cb: () => void, interval
 
 if (isWindows) {
   const native = require('../build/Release/windows_process_tree.node');
+
+  describe('getCurrentProcessUserSid', () => {
+    it('should return the current user SID via the native and public APIs', () => {
+      const sid = getCurrentProcessUserSid();
+      assert.match(sid, /^S-1-\d+(?:-\d+)+$/);
+      assert.strictEqual(sid, native.getCurrentProcessUserSid());
+    });
+
+    it('should return the same SID on repeated calls', () => {
+      const sid = getCurrentProcessUserSid();
+      for (let i = 0; i < 1000; i++) {
+        assert.strictEqual(getCurrentProcessUserSid(), sid);
+      }
+    });
+
+    it('should return the process user SID from a worker thread', async () => {
+      const sid = await new Promise<string>((resolve, reject) => {
+        let workerSid: string;
+        const worker = new Worker(`
+          const { parentPort, workerData } = require('worker_threads');
+          parentPort.postMessage(require(workerData).getCurrentProcessUserSid());
+        `, { eval: true, workerData: require.resolve('./index') });
+        worker.once('message', (message: string) => { workerSid = message; });
+        worker.once('error', reject);
+        worker.once('exit', code => {
+          if (code !== 0) {
+            reject(new Error(`Worker exited with code ${code}`));
+          } else {
+            resolve(workerSid);
+          }
+        });
+      });
+      assert.strictEqual(sid, getCurrentProcessUserSid());
+    });
+  });
+
+  describe('setOwnerOnlyAcl', () => {
+    let directory: string;
+
+    beforeEach(() => {
+      directory = fs.mkdtempSync(path.join(os.tmpdir(), 'windows-process-tree-acl-'));
+    });
+
+    afterEach(() => {
+      fs.rmSync(directory, { recursive: true, force: true });
+    });
+
+    function powershell(script: string): string {
+      const powershellDirectory = path.join(process.env.SystemRoot!, 'System32', 'WindowsPowerShell', 'v1.0');
+      const env: NodeJS.ProcessEnv = { ...process.env, ACL_TEST_PATH: directory };
+      for (const key of Object.keys(env)) {
+        if (key.toLowerCase() === 'psmodulepath') {
+          delete env[key];
+        }
+      }
+      env.PSModulePath = path.join(powershellDirectory, 'Modules');
+      return child_process.execFileSync(
+        path.join(powershellDirectory, 'powershell.exe'),
+        ['-NoLogo', '-NoProfile', '-NonInteractive', '-Command', `$ErrorActionPreference = 'Stop'; ${script}`],
+        { encoding: 'utf8', env }
+      ).trim();
+    }
+
+    it('should reject invalid native arguments', () => {
+      for (const value of [undefined, null, 1, {}, '', 'invalid\0path']) {
+        assert.throws(() => native.setOwnerOnlyAcl(value), TypeError);
+      }
+    });
+
+    it('should reject invalid paths through the public API', async () => {
+      await assert.rejects(setOwnerOnlyAcl(''), TypeError);
+      await assert.rejects(setOwnerOnlyAcl(path.join(directory, 'missing')), /SetNamedSecurityInfoW failed: 2/);
+    });
+
+    it('should replace grants, protect inheritance and preserve ownership for Unicode paths', async () => {
+      const target = path.join(directory, 'owner-only \u4e16\u754c');
+      fs.mkdirSync(target);
+      fs.writeFileSync(path.join(target, 'existing.txt'), '');
+      const owner = powershell(`
+        $parentAcl = Get-Acl -LiteralPath $env:ACL_TEST_PATH
+        $parentAcl.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new(
+          [System.Security.Principal.SecurityIdentifier]::new('S-1-1-0'),
+          'ReadAndExecute', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
+        Set-Acl -LiteralPath $env:ACL_TEST_PATH -AclObject $parentAcl
+        $target = (Get-ChildItem -LiteralPath $env:ACL_TEST_PATH -Directory).FullName
+        $acl = Get-Acl -LiteralPath $target
+        $acl.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new(
+          [System.Security.Principal.SecurityIdentifier]::new('S-1-5-32-546'),
+          'ReadAndExecute', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
+        Set-Acl -LiteralPath $target -AclObject $acl
+        $existing = Join-Path $target 'existing.txt'
+        $existingAcl = Get-Acl -LiteralPath $existing
+        $existingAcl.SetAccessRuleProtection($false, $false)
+        @($existingAcl.Access | Where-Object { -not $_.IsInherited }) | ForEach-Object {
+          [void]$existingAcl.RemoveAccessRuleSpecific($_)
+        }
+        Set-Acl -LiteralPath $existing -AclObject $existingAcl
+        $acl.Owner
+      `);
+
+      await setOwnerOnlyAcl(target);
+      await setOwnerOnlyAcl(target);
+      fs.writeFileSync(path.join(target, 'new.txt'), '');
+      fs.mkdirSync(path.join(target, 'child'));
+      fs.writeFileSync(path.join(target, 'child', 'nested.txt'), '');
+
+      const actual = JSON.parse(powershell(`
+        $target = (Get-ChildItem -LiteralPath $env:ACL_TEST_PATH -Directory).FullName
+        $paths = @($target, (Join-Path $target 'existing.txt'), (Join-Path $target 'new.txt'),
+          (Join-Path $target 'child'), (Join-Path $target 'child\\nested.txt'))
+        @($paths | ForEach-Object {
+          $acl = Get-Acl -LiteralPath $_
+          @{
+            owner = $acl.Owner
+            protected = $acl.AreAccessRulesProtected
+            access = @($acl.Access | ForEach-Object {
+              @{
+                sid = $_.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value
+                rights = [int]$_.FileSystemRights
+                type = [int]$_.AccessControlType
+                inheritance = [int]$_.InheritanceFlags
+                propagation = [int]$_.PropagationFlags
+                inherited = $_.IsInherited
+              }
+            } | Sort-Object { $_.sid })
+          }
+        }) | ConvertTo-Json -Depth 5 -Compress
+      `));
+      const sids = [...new Set([getCurrentProcessUserSid(), 'S-1-5-18', 'S-1-5-32-544'])].sort();
+      const expected = (isDirectory: boolean, inherited: boolean) => ({
+        owner,
+        protected: !inherited,
+        access: sids.map(sid => ({
+          sid, rights: 2032127, type: 0, inheritance: isDirectory ? 3 : 0, propagation: 0, inherited
+        }))
+      });
+      assert.deepStrictEqual(actual, [
+        expected(true, false), expected(false, true), expected(false, true), expected(true, true), expected(false, true)
+      ]);
+    });
+
+    it('should apply ACLs to files and support concurrent calls', async () => {
+      const files = Array.from({ length: 5 }, (_, i) => path.join(directory, `${i}.txt`));
+      files.forEach(file => fs.writeFileSync(file, 'test'));
+      await Promise.all(files.map(file => setOwnerOnlyAcl(file)));
+      assert.deepStrictEqual(files.map(file => fs.readFileSync(file, 'utf8')), files.map(() => 'test'));
+    });
+  });
 
   describe('getAllProcesses', () => {
     it('should return a list containing this process via native API', (done) => {
@@ -455,6 +605,18 @@ if (isWindows) {
     });
   });
 } else {
+  describe('setOwnerOnlyAcl', () => {
+    it('should reject platforms other than Windows', async () => {
+      await assert.rejects(setOwnerOnlyAcl('directory'), /only implemented on Windows/);
+    });
+  });
+
+  describe('getCurrentProcessUserSid', () => {
+    it('should reject platforms other than Windows', () => {
+      assert.throws(() => getCurrentProcessUserSid(), /only implemented on Windows/);
+    });
+  });
+
   describe('getProcessTree', () => {
     it('should not be implemented on Windows', () => {
       assert.throws(() => {

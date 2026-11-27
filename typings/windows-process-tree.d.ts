@@ -4,6 +4,18 @@
  *--------------------------------------------------------------------------------------------*/
 
 declare module '@vscode/windows-process-tree' {
+  /**
+   * Returns the SID of the current process's user without spawning a process.
+   * Throws if the token cannot be queried or the platform is not Windows.
+   */
+  export function getCurrentProcessUserSid(): string;
+
+  /**
+   * Replaces a file or directory's DACL with inheritable full-control grants for the
+   * current process user, SYSTEM and Administrators, with parent inheritance disabled.
+   */
+  export function setOwnerOnlyAcl(path: string): Promise<void>;
+
   export enum ProcessDataFlag {
     None = 0,
     Memory = 1,

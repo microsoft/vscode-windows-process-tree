@@ -16,6 +16,28 @@ export enum ProcessDataFlag {
 
 type RequestCallback = (processList: IProcessInfo[]) => void;
 
+/**
+ * Returns the SID of the current process's user without spawning a process.
+ * Throws if the token cannot be queried or the platform is not Windows.
+ */
+export function getCurrentProcessUserSid(): string {
+  if (process.platform !== 'win32') {
+    throw new Error('getCurrentProcessUserSid is only implemented on Windows');
+  }
+  return native.getCurrentProcessUserSid();
+}
+
+/**
+ * Replaces a file or directory's DACL with inheritable full-control grants for the
+ * current process user, SYSTEM and Administrators, with parent inheritance disabled.
+ */
+export async function setOwnerOnlyAcl(path: string): Promise<void> {
+  if (process.platform !== 'win32') {
+    throw new Error('setOwnerOnlyAcl is only implemented on Windows');
+  }
+  await native.setOwnerOnlyAcl(path);
+}
+
 // requestInProgress is used for any function that uses CreateToolhelp32Snapshot, as multiple calls
 // to this cannot be done at the same time.
 let requestInProgress = false;

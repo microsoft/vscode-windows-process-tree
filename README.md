@@ -31,6 +31,37 @@ if (process.platform === 'win32') {
 
 For the full API look at the [typings file](./typings/windows-process-tree.d.ts).
 
+### Current user SID
+
+`getCurrentProcessUserSid()` synchronously returns the SID of the current
+process's user (for example, `S-1-5-21-...`) using Windows token APIs, without
+launching `whoami.exe` or another process. It throws if the lookup fails or the
+platform is not Windows.
+
+```ts
+import { getCurrentProcessUserSid } from '@vscode/windows-process-tree';
+
+if (process.platform === 'win32') {
+  const sid = getCurrentProcessUserSid();
+}
+```
+
+### Owner-only ACLs
+
+`await setOwnerOnlyAcl(path)` replaces an existing file or directory's DACL using
+native Windows security APIs on a worker thread, without launching subprocesses.
+It disables parent ACL inheritance and grants full control to the current process
+user, SYSTEM and Administrators. Directory grants are inherited by child files and
+directories. Existing explicit grants are replaced; ownership and auditing are
+unchanged. The promise rejects on invalid input, a Windows API error, or a
+non-Windows platform.
+
+```ts
+import { setOwnerOnlyAcl } from '@vscode/windows-process-tree';
+
+await setOwnerOnlyAcl(directoryPath);
+```
+
 ## Why a native node module?
 
 The current convention is to run wmic.exe to query a particular process ID and then parse the output like so:
